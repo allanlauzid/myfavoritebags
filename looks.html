@@ -1,6 +1,15 @@
 <!DOCTYPE html>
 <html lang="pt-BR" class="no-js">
 <head>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4589608543845725"
+     crossorigin="anonymous"></script>
+<script>
+  // Sempre volta pro topo ao recarregar/entrar na página — desliga a
+  // restauração automática de posição de scroll do navegador (que, por
+  // padrão, tenta manter onde você estava antes de dar F5).
+  if ('scrollRestoration' in history) { history.scrollRestoration = 'manual'; }
+  window.addEventListener('load', () => window.scrollTo(0, 0));
+</script>
 <script>document.documentElement.classList.replace('no-js','js');setTimeout(()=>{if(!document.documentElement.classList.contains('reveal-ready'))document.querySelectorAll('.reveal').forEach(el=>el.classList.add('vis'));},2500);</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -26,7 +35,11 @@
   // ?preview=1 permite que o admin edite/visualize a página mesmo bloqueada, sem publicar.
   const _isPreview = new URLSearchParams(location.search).get('preview') === '1';
   // Padrão: visível (só bloqueia se o admin marcar explicitamente como "locked")
-  if (!_isPreview && (localStorage.getItem('mfb_looks_state') || 'visible') === 'locked') {
+  // try/catch: localStorage pode lançar SecurityError com cookies/dados de
+  // site bloqueados — sem proteção, este script morria aqui.
+  var _looksState = null;
+  try { _looksState = localStorage.getItem('mfb_looks_state'); } catch (_) {}
+  if (!_isPreview && (_looksState || 'visible') === 'locked') {
     location.replace('index.html');
   }
 </script>
@@ -78,6 +91,26 @@
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 html { scroll-behavior:smooth; -webkit-text-size-adjust:100%; }
 body { font-family:'Jost',sans-serif; background:var(--bg); color:var(--text-body); overflow-x:hidden; position:relative; zoom:1.1; }
+
+/* ─── SCROLLBAR CUSTOMIZADA (global) ────────────────────────────────────────
+   Aplica em toda a página — inclusive na barra do navegador — em vez de
+   deixar restrita a componentes isolados (ex.: .admin-bd). Sem trilho (track
+   sempre transparente) e a barrinha em si fica invisível quando parada, só
+   aparecendo ao passar o mouse sobre a área com rolagem. Elementos que
+   precisam esconder a scrollbar por completo continuam funcionando
+   normalmente: a regra deles é mais específica e sobrescreve esta. */
+* {
+  scrollbar-width:thin;
+  scrollbar-color:transparent transparent;
+}
+*:hover {
+  scrollbar-color:var(--rose-dark) transparent;
+}
+::-webkit-scrollbar { width:8px; height:8px; background:transparent; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:transparent; border-radius:10px; }
+*:hover::-webkit-scrollbar-thumb { background:var(--rose-dark); }
+::-webkit-scrollbar-thumb:hover { background:var(--rose-deep); }
 a { text-decoration:none; color:inherit; }
 button { font-family:'Jost',sans-serif; }
 
@@ -141,14 +174,99 @@ button { font-family:'Jost',sans-serif; }
    Perto do hero fica sutil; a medida que desce a página, a curva com duas
    assíntotas verticais (subida, descida, subida rápida) aumenta bastante a
    amplitude, então o botão passa a flutuar muito mais. */
-/* Movimento contínuo o ciclo inteiro (sem trechos parados): sobe-e-vai-pra-
-   esquerda, volta ao centro, desce-e-vai-pra-direita, volta ao centro. */
+/* Uma única animação contínua, em 3 fases sequenciais, sempre em timing
+   LINEAR (sem ease-in-out) — é o "ease" que desacelerava até quase parar
+   em cada parada (0%/50%/100% do desenho antigo) que causava a sensação
+   de pausa. Sem easing, o movimento nunca desacelera até zero.
+   Fase 1 (0%–33%)   — desenho em "W": desce, sobe parcial, desce de novo,
+                        sobe — sem nenhum ponto de retorno total ao centro.
+   Fase 2 (33%–66%)  — "S duplo": dois S's empilhados, amplitude reduzida
+                        (75% da amplitude normal) pra ficar mais compacto.
+   Fase 3 (66%–100%) — espiral, amplitude AMPLIADA (140% da normal) pra se
+                        espalhar mais — 2 voltas completas (0°→720°) com o
+                        raio crescendo e diminuindo suavemente.
+   As pontas de cada fase já entregam valores próximos aos do início da
+   próxima, então a transição entre elas também não trava. */
 @keyframes matchFloat {
-  0%   { transform:translate(0,0) rotate(0) scale(1); }
-  25%  { transform:translate(calc(-1 * var(--float-amp-x-px,30px)), calc(-1 * var(--float-amp-px,60px))) rotate(calc(-1.2deg * var(--float-amp,1))) scale(calc(1 + 0.025 * var(--float-amp,1))); }
-  50%  { transform:translate(0,0) rotate(0) scale(1); }
-  75%  { transform:translate(var(--float-amp-x-px,30px), calc(-0.667 * var(--float-amp-px,60px))) rotate(calc(1deg * var(--float-amp,1))) scale(calc(1 + 0.018 * var(--float-amp,1))); }
-  100% { transform:translate(0,0) rotate(0) scale(1); }
+  /* ── Fase 1: "W" — 25 paradas (a cada ~1.39%), Y = (1-cos(30°·i))/2 (2
+     vales suaves) e X = 0.3·sen(15°·i) (drift diagonal leve). ── */
+  0%     { transform:translate(0,0) rotate(0) scale(1); }
+  1.39%  { transform:translate(calc(0.078 * var(--float-amp-x-px,30px)), calc(0.067 * var(--float-amp-px,60px))) rotate(calc(0.26deg * var(--float-amp,1))) scale(calc(1 + 0.0015 * var(--float-amp,1))); }
+  2.78%  { transform:translate(calc(0.15 * var(--float-amp-x-px,30px)), calc(0.25 * var(--float-amp-px,60px))) rotate(calc(0.5deg * var(--float-amp,1))) scale(calc(1 + 0.0055 * var(--float-amp,1))); }
+  4.17%  { transform:translate(calc(0.212 * var(--float-amp-x-px,30px)), calc(0.5 * var(--float-amp-px,60px))) rotate(calc(0.7deg * var(--float-amp,1))) scale(calc(1 + 0.011 * var(--float-amp,1))); }
+  5.56%  { transform:translate(calc(0.26 * var(--float-amp-x-px,30px)), calc(0.75 * var(--float-amp-px,60px))) rotate(calc(0.86deg * var(--float-amp,1))) scale(calc(1 + 0.0165 * var(--float-amp,1))); }
+  6.94%  { transform:translate(calc(0.29 * var(--float-amp-x-px,30px)), calc(0.933 * var(--float-amp-px,60px))) rotate(calc(0.96deg * var(--float-amp,1))) scale(calc(1 + 0.0205 * var(--float-amp,1))); }
+  8.33%  { transform:translate(calc(0.3 * var(--float-amp-x-px,30px)), var(--float-amp-px,60px)) rotate(calc(1deg * var(--float-amp,1))) scale(calc(1 + 0.022 * var(--float-amp,1))); }
+  9.72%  { transform:translate(calc(0.29 * var(--float-amp-x-px,30px)), calc(0.933 * var(--float-amp-px,60px))) rotate(calc(0.96deg * var(--float-amp,1))) scale(calc(1 + 0.0205 * var(--float-amp,1))); }
+  11.11% { transform:translate(calc(0.26 * var(--float-amp-x-px,30px)), calc(0.75 * var(--float-amp-px,60px))) rotate(calc(0.86deg * var(--float-amp,1))) scale(calc(1 + 0.0165 * var(--float-amp,1))); }
+  12.5%  { transform:translate(calc(0.212 * var(--float-amp-x-px,30px)), calc(0.5 * var(--float-amp-px,60px))) rotate(calc(0.7deg * var(--float-amp,1))) scale(calc(1 + 0.011 * var(--float-amp,1))); }
+  13.89% { transform:translate(calc(0.15 * var(--float-amp-x-px,30px)), calc(0.25 * var(--float-amp-px,60px))) rotate(calc(0.5deg * var(--float-amp,1))) scale(calc(1 + 0.0055 * var(--float-amp,1))); }
+  15.28% { transform:translate(calc(0.078 * var(--float-amp-x-px,30px)), calc(0.067 * var(--float-amp-px,60px))) rotate(calc(0.26deg * var(--float-amp,1))) scale(calc(1 + 0.0015 * var(--float-amp,1))); }
+  16.67% { transform:translate(0,0) rotate(0) scale(1); }
+  18.06% { transform:translate(calc(-0.078 * var(--float-amp-x-px,30px)), calc(0.067 * var(--float-amp-px,60px))) rotate(calc(-0.26deg * var(--float-amp,1))) scale(calc(1 + 0.0015 * var(--float-amp,1))); }
+  19.44% { transform:translate(calc(-0.15 * var(--float-amp-x-px,30px)), calc(0.25 * var(--float-amp-px,60px))) rotate(calc(-0.5deg * var(--float-amp,1))) scale(calc(1 + 0.0055 * var(--float-amp,1))); }
+  20.83% { transform:translate(calc(-0.212 * var(--float-amp-x-px,30px)), calc(0.5 * var(--float-amp-px,60px))) rotate(calc(-0.7deg * var(--float-amp,1))) scale(calc(1 + 0.011 * var(--float-amp,1))); }
+  22.22% { transform:translate(calc(-0.26 * var(--float-amp-x-px,30px)), calc(0.75 * var(--float-amp-px,60px))) rotate(calc(-0.86deg * var(--float-amp,1))) scale(calc(1 + 0.0165 * var(--float-amp,1))); }
+  23.61% { transform:translate(calc(-0.29 * var(--float-amp-x-px,30px)), calc(0.933 * var(--float-amp-px,60px))) rotate(calc(-0.96deg * var(--float-amp,1))) scale(calc(1 + 0.0205 * var(--float-amp,1))); }
+  25%    { transform:translate(calc(-0.3 * var(--float-amp-x-px,30px)), var(--float-amp-px,60px)) rotate(calc(-1deg * var(--float-amp,1))) scale(calc(1 + 0.022 * var(--float-amp,1))); }
+  26.39% { transform:translate(calc(-0.29 * var(--float-amp-x-px,30px)), calc(0.933 * var(--float-amp-px,60px))) rotate(calc(-0.96deg * var(--float-amp,1))) scale(calc(1 + 0.0205 * var(--float-amp,1))); }
+  27.78% { transform:translate(calc(-0.26 * var(--float-amp-x-px,30px)), calc(0.75 * var(--float-amp-px,60px))) rotate(calc(-0.86deg * var(--float-amp,1))) scale(calc(1 + 0.0165 * var(--float-amp,1))); }
+  29.17% { transform:translate(calc(-0.212 * var(--float-amp-x-px,30px)), calc(0.5 * var(--float-amp-px,60px))) rotate(calc(-0.7deg * var(--float-amp,1))) scale(calc(1 + 0.011 * var(--float-amp,1))); }
+  30.56% { transform:translate(calc(-0.15 * var(--float-amp-x-px,30px)), calc(0.25 * var(--float-amp-px,60px))) rotate(calc(-0.5deg * var(--float-amp,1))) scale(calc(1 + 0.0055 * var(--float-amp,1))); }
+  31.94% { transform:translate(calc(-0.078 * var(--float-amp-x-px,30px)), calc(0.067 * var(--float-amp-px,60px))) rotate(calc(-0.26deg * var(--float-amp,1))) scale(calc(1 + 0.0015 * var(--float-amp,1))); }
+  /* ── Fase 2: "S duplo" (amplitude x0.75) — Lissajous 2:1 (X com o dobro
+     da frequência de Y), 25 paradas. ── */
+  33.33% { transform:translate(0,0) rotate(0) scale(1); }
+  34.72% { transform:translate(calc(0.375 * var(--float-amp-x-px,30px)), calc(0.194 * var(--float-amp-px,60px))) rotate(calc(0.45deg * var(--float-amp,1))) scale(calc(1 + 0.0078 * var(--float-amp,1))); }
+  36.11% { transform:translate(calc(0.6495 * var(--float-amp-x-px,30px)), calc(0.375 * var(--float-amp-px,60px))) rotate(calc(0.78deg * var(--float-amp,1))) scale(calc(1 + 0.015 * var(--float-amp,1))); }
+  37.5%  { transform:translate(calc(0.75 * var(--float-amp-x-px,30px)), calc(0.53 * var(--float-amp-px,60px))) rotate(calc(0.9deg * var(--float-amp,1))) scale(calc(1 + 0.0212 * var(--float-amp,1))); }
+  38.89% { transform:translate(calc(0.6495 * var(--float-amp-x-px,30px)), calc(0.6495 * var(--float-amp-px,60px))) rotate(calc(0.78deg * var(--float-amp,1))) scale(calc(1 + 0.026 * var(--float-amp,1))); }
+  40.28% { transform:translate(calc(0.375 * var(--float-amp-x-px,30px)), calc(0.724 * var(--float-amp-px,60px))) rotate(calc(0.45deg * var(--float-amp,1))) scale(calc(1 + 0.029 * var(--float-amp,1))); }
+  41.67% { transform:translate(0, calc(0.75 * var(--float-amp-px,60px))) rotate(0) scale(calc(1 + 0.03 * var(--float-amp,1))); }
+  43.06% { transform:translate(calc(-0.375 * var(--float-amp-x-px,30px)), calc(0.724 * var(--float-amp-px,60px))) rotate(calc(-0.45deg * var(--float-amp,1))) scale(calc(1 + 0.029 * var(--float-amp,1))); }
+  44.44% { transform:translate(calc(-0.6495 * var(--float-amp-x-px,30px)), calc(0.6495 * var(--float-amp-px,60px))) rotate(calc(-0.78deg * var(--float-amp,1))) scale(calc(1 + 0.026 * var(--float-amp,1))); }
+  45.83% { transform:translate(calc(-0.75 * var(--float-amp-x-px,30px)), calc(0.53 * var(--float-amp-px,60px))) rotate(calc(-0.9deg * var(--float-amp,1))) scale(calc(1 + 0.0212 * var(--float-amp,1))); }
+  47.22% { transform:translate(calc(-0.6495 * var(--float-amp-x-px,30px)), calc(0.375 * var(--float-amp-px,60px))) rotate(calc(-0.78deg * var(--float-amp,1))) scale(calc(1 + 0.015 * var(--float-amp,1))); }
+  48.61% { transform:translate(calc(-0.375 * var(--float-amp-x-px,30px)), calc(0.194 * var(--float-amp-px,60px))) rotate(calc(-0.45deg * var(--float-amp,1))) scale(calc(1 + 0.0078 * var(--float-amp,1))); }
+  50%    { transform:translate(0,0) rotate(0) scale(1); }
+  51.39% { transform:translate(calc(0.375 * var(--float-amp-x-px,30px)), calc(-0.194 * var(--float-amp-px,60px))) rotate(calc(0.45deg * var(--float-amp,1))) scale(calc(1 + 0.0078 * var(--float-amp,1))); }
+  52.78% { transform:translate(calc(0.6495 * var(--float-amp-x-px,30px)), calc(-0.375 * var(--float-amp-px,60px))) rotate(calc(0.78deg * var(--float-amp,1))) scale(calc(1 + 0.015 * var(--float-amp,1))); }
+  54.17% { transform:translate(calc(0.75 * var(--float-amp-x-px,30px)), calc(-0.53 * var(--float-amp-px,60px))) rotate(calc(0.9deg * var(--float-amp,1))) scale(calc(1 + 0.0212 * var(--float-amp,1))); }
+  55.56% { transform:translate(calc(0.6495 * var(--float-amp-x-px,30px)), calc(-0.6495 * var(--float-amp-px,60px))) rotate(calc(0.78deg * var(--float-amp,1))) scale(calc(1 + 0.026 * var(--float-amp,1))); }
+  56.94% { transform:translate(calc(0.375 * var(--float-amp-x-px,30px)), calc(-0.724 * var(--float-amp-px,60px))) rotate(calc(0.45deg * var(--float-amp,1))) scale(calc(1 + 0.029 * var(--float-amp,1))); }
+  58.33% { transform:translate(0, calc(-0.75 * var(--float-amp-px,60px))) rotate(0) scale(calc(1 + 0.03 * var(--float-amp,1))); }
+  59.72% { transform:translate(calc(-0.375 * var(--float-amp-x-px,30px)), calc(-0.724 * var(--float-amp-px,60px))) rotate(calc(-0.45deg * var(--float-amp,1))) scale(calc(1 + 0.029 * var(--float-amp,1))); }
+  61.11% { transform:translate(calc(-0.6495 * var(--float-amp-x-px,30px)), calc(-0.6495 * var(--float-amp-px,60px))) rotate(calc(-0.78deg * var(--float-amp,1))) scale(calc(1 + 0.026 * var(--float-amp,1))); }
+  62.5%  { transform:translate(calc(-0.75 * var(--float-amp-x-px,30px)), calc(-0.53 * var(--float-amp-px,60px))) rotate(calc(-0.9deg * var(--float-amp,1))) scale(calc(1 + 0.0212 * var(--float-amp,1))); }
+  63.89% { transform:translate(calc(-0.6495 * var(--float-amp-x-px,30px)), calc(-0.375 * var(--float-amp-px,60px))) rotate(calc(-0.78deg * var(--float-amp,1))) scale(calc(1 + 0.015 * var(--float-amp,1))); }
+  65.28% { transform:translate(calc(-0.375 * var(--float-amp-x-px,30px)), calc(-0.194 * var(--float-amp-px,60px))) rotate(calc(-0.45deg * var(--float-amp,1))) scale(calc(1 + 0.0078 * var(--float-amp,1))); }
+  /* ── Fase 3: espiral (amplitude x1.4) — raio em envelope sen(π·t), ângulo
+     dando 2 voltas completas (0°→720°), 25 paradas (a cada 30°). ── */
+  66.67% { transform:translate(0,0) rotate(0) scale(1); }
+  68.06% { transform:translate(calc(0.158 * var(--float-amp-x-px,30px)), calc(0.091 * var(--float-amp-px,60px))) rotate(calc(0.24deg * var(--float-amp,1))) scale(calc(1 + 0.0065 * var(--float-amp,1))); }
+  69.44% { transform:translate(calc(0.181 * var(--float-amp-x-px,30px)), calc(0.314 * var(--float-amp-px,60px))) rotate(calc(0.27deg * var(--float-amp,1))) scale(calc(1 + 0.013 * var(--float-amp,1))); }
+  70.83% { transform:translate(0, calc(0.536 * var(--float-amp-px,60px))) rotate(0) scale(calc(1 + 0.019 * var(--float-amp,1))); }
+  72.22% { transform:translate(calc(-0.35 * var(--float-amp-x-px,30px)), calc(0.606 * var(--float-amp-px,60px))) rotate(calc(-0.53deg * var(--float-amp,1))) scale(calc(1 + 0.025 * var(--float-amp,1))); }
+  73.61% { transform:translate(calc(-0.738 * var(--float-amp-x-px,30px)), calc(0.426 * var(--float-amp-px,60px))) rotate(calc(-1.11deg * var(--float-amp,1))) scale(calc(1 + 0.0304 * var(--float-amp,1))); }
+  75%    { transform:translate(calc(-0.99 * var(--float-amp-x-px,30px)), 0) rotate(calc(-1.49deg * var(--float-amp,1))) scale(calc(1 + 0.0354 * var(--float-amp,1))); }
+  76.39% { transform:translate(calc(-0.962 * var(--float-amp-x-px,30px)), calc(-0.556 * var(--float-amp-px,60px))) rotate(calc(-1.44deg * var(--float-amp,1))) scale(calc(1 + 0.0397 * var(--float-amp,1))); }
+  77.78% { transform:translate(calc(-0.606 * var(--float-amp-x-px,30px)), calc(-1.05 * var(--float-amp-px,60px))) rotate(calc(-0.91deg * var(--float-amp,1))) scale(calc(1 + 0.0433 * var(--float-amp,1))); }
+  79.17% { transform:translate(0, calc(-1.294 * var(--float-amp-px,60px))) rotate(0) scale(calc(1 + 0.0462 * var(--float-amp,1))); }
+  80.56% { transform:translate(calc(0.676 * var(--float-amp-x-px,30px)), calc(-1.172 * var(--float-amp-px,60px))) rotate(calc(1.01deg * var(--float-amp,1))) scale(calc(1 + 0.0483 * var(--float-amp,1))); }
+  81.94% { transform:translate(calc(1.203 * var(--float-amp-x-px,30px)), calc(-0.694 * var(--float-amp-px,60px))) rotate(calc(1.8deg * var(--float-amp,1))) scale(calc(1 + 0.0496 * var(--float-amp,1))); }
+  83.33% { transform:translate(calc(1.4 * var(--float-amp-x-px,30px)), 0) rotate(calc(2.1deg * var(--float-amp,1))) scale(calc(1 + 0.05 * var(--float-amp,1))); }
+  84.72% { transform:translate(calc(1.203 * var(--float-amp-x-px,30px)), calc(0.694 * var(--float-amp-px,60px))) rotate(calc(1.8deg * var(--float-amp,1))) scale(calc(1 + 0.0496 * var(--float-amp,1))); }
+  86.11% { transform:translate(calc(0.676 * var(--float-amp-x-px,30px)), calc(1.172 * var(--float-amp-px,60px))) rotate(calc(1.01deg * var(--float-amp,1))) scale(calc(1 + 0.0483 * var(--float-amp,1))); }
+  87.5%  { transform:translate(0, calc(1.294 * var(--float-amp-px,60px))) rotate(0) scale(calc(1 + 0.0462 * var(--float-amp,1))); }
+  88.89% { transform:translate(calc(-0.606 * var(--float-amp-x-px,30px)), calc(1.05 * var(--float-amp-px,60px))) rotate(calc(-0.91deg * var(--float-amp,1))) scale(calc(1 + 0.0433 * var(--float-amp,1))); }
+  90.28% { transform:translate(calc(-0.962 * var(--float-amp-x-px,30px)), calc(0.556 * var(--float-amp-px,60px))) rotate(calc(-1.44deg * var(--float-amp,1))) scale(calc(1 + 0.0397 * var(--float-amp,1))); }
+  91.67% { transform:translate(calc(-0.99 * var(--float-amp-x-px,30px)), 0) rotate(calc(-1.49deg * var(--float-amp,1))) scale(calc(1 + 0.0354 * var(--float-amp,1))); }
+  93.06% { transform:translate(calc(-0.738 * var(--float-amp-x-px,30px)), calc(-0.426 * var(--float-amp-px,60px))) rotate(calc(-1.11deg * var(--float-amp,1))) scale(calc(1 + 0.0304 * var(--float-amp,1))); }
+  94.44% { transform:translate(calc(-0.35 * var(--float-amp-x-px,30px)), calc(-0.606 * var(--float-amp-px,60px))) rotate(calc(-0.53deg * var(--float-amp,1))) scale(calc(1 + 0.025 * var(--float-amp,1))); }
+  95.83% { transform:translate(0, calc(-0.536 * var(--float-amp-px,60px))) rotate(0) scale(calc(1 + 0.019 * var(--float-amp,1))); }
+  97.22% { transform:translate(calc(0.181 * var(--float-amp-x-px,30px)), calc(-0.314 * var(--float-amp-px,60px))) rotate(calc(0.27deg * var(--float-amp,1))) scale(calc(1 + 0.013 * var(--float-amp,1))); }
+  98.61% { transform:translate(calc(0.158 * var(--float-amp-x-px,30px)), calc(-0.091 * var(--float-amp-px,60px))) rotate(calc(0.24deg * var(--float-amp,1))) scale(calc(1 + 0.0065 * var(--float-amp,1))); }
+  100%   { transform:translate(0,0) rotate(0) scale(1); }
 }
 @keyframes matchGlow {
   0%, 100% { filter:drop-shadow(0 8px 20px rgba(156,122,52,.28)); }
@@ -189,6 +307,16 @@ button { font-family:'Jost',sans-serif; }
   animation:matchEnter .7s .45s ease forwards;
   transition:transform .3s var(--ease, ease);
 }
+/* Flutuação (matchFloat) do botão inteiro, só no desktop — roda desde já,
+   junto com a entrada (matchEnter anima "opacity", matchFloat anima
+   "transform": propriedades diferentes, sem conflito entre as duas). Como
+   todos os efeitos (::before, .mhb-visual, ícone) são filhos daqui, eles
+   passam a se mover juntos, em vez de só o ícone flutuar sozinho. */
+@media(min-width:769px) {
+  #matchHeroBtn {
+    animation:matchEnter .7s .45s ease forwards, matchFloat 42s 1.2s linear infinite;
+  }
+}
 #matchHeroBtn::before {
   content:'';
   position:absolute; inset:0;
@@ -207,6 +335,11 @@ button { font-family:'Jost',sans-serif; }
    ÍCONE (img) dentro dele é que respira/reage à proximidade do mouse, ver
    initMatchBtnOpacity mais abaixo. */
 #matchHeroBtn.entered { opacity:1; animation:none; }
+@media(min-width:769px) {
+  /* Depois de "entrar", continua só com o matchFloat (o matchEnter já
+     rodou uma vez e não precisa repetir ao soltar de um arraste). */
+  #matchHeroBtn.entered { animation:matchFloat 42s 1.2s linear infinite; }
+}
 #matchHeroBtn.dragging::before { animation:none; opacity:0; }
 #matchHeroBtn.dragging .mhb-visual { animation:none; box-shadow:none; }
 #matchHeroBtn:hover { transform:scale(1.06); }
@@ -252,14 +385,10 @@ button { font-family:'Jost',sans-serif; }
   overflow:hidden;
   /* Opacidade e escala são controladas por JS (respiração + proximidade do
      mouse, só no desktop — ver initMatchBtnOpacity). O brilho (matchGlow)
-     fica ligado em qualquer tela; a flutuação (matchFloat) só no desktop,
-     ver media query logo abaixo. */
+     fica ligado em qualquer tela. A flutuação (matchFloat) agora está no
+     #matchHeroBtn (pai) — assim os efeitos (ping/brilho/reflexo) se movem
+     junto com o ícone, em vez de só ele flutuar sozinho. */
   animation:matchGlow 7.8s ease-in-out infinite;
-}
-@media(min-width:769px) {
-  #matchHeroBtn img {
-    animation:matchFloat 10.5s 1.2s ease-in-out infinite, matchGlow 7.8s ease-in-out infinite;
-  }
 }
 #matchHeroBtn.dragging img { animation-play-state:paused; }
 #matchHeroBtn .mhb-tip {
@@ -464,12 +593,20 @@ html.reduce-motion .hero-content { animation:none; -webkit-mask-image:none; mask
 .pcard { position:relative; }
 
 .pcard-img {
+  /* Bento Grid: cantos arredondados + sombra suave em vez de só uma borda
+     fina — dá a sensação de "card" modular, tipo app, sem mudar a paleta. */
   position:relative; aspect-ratio:3/4; overflow:hidden;
   background:var(--bg2); margin-bottom:20px;
   border:1px solid var(--line);
-  transition:border-color .35s;
+  border-radius:20px;
+  box-shadow:0 2px 10px rgba(101,60,43,.06);
+  transition:border-color .35s, box-shadow .35s, transform .35s var(--ease);
 }
-.pcard:not(.out):hover .pcard-img { border-color:var(--rose); }
+.pcard:not(.out):hover .pcard-img {
+  border-color:var(--rose);
+  box-shadow:0 10px 28px rgba(101,60,43,.14);
+  transform:translateY(-2px);
+}
 
 .pcard-visual {
   width:100%; height:100%;
@@ -870,12 +1007,8 @@ footer {
   flex:1; text-align:center; white-space:nowrap;
 .admin-bd {
   padding:28px 38px 40px; overflow-y:auto; flex:1;
-  scrollbar-width:thin; scrollbar-color:var(--rose-dark) transparent;
 }
 .admin-bd::-webkit-scrollbar { width:6px; }
-.admin-bd::-webkit-scrollbar-track { background:transparent; }
-.admin-bd::-webkit-scrollbar-thumb { background:var(--rose-dark); border-radius:10px; }
-.admin-bd::-webkit-scrollbar-thumb:hover { background:var(--rose-deep); }
 
 .admin-tabs {
   display:flex; border-bottom:1px solid var(--line);
@@ -906,13 +1039,23 @@ footer {
 .upload-dropzone {
   border:2px dashed var(--rose); border-radius:16px; padding:64px 24px;
   text-align:center; cursor:pointer; background:rgba(156,122,52,.05);
-  transition:background .25s, border-color .25s;
+  transition:background .25s, border-color .25s, transform .25s, box-shadow .25s;
 }
-.upload-dropzone:hover, .upload-dropzone.drag-over {
+.upload-dropzone:hover {
   background:rgba(156,122,52,.13); border-color:var(--rose-dark);
+}
+.upload-dropzone.drag-over {
+  background:rgba(156,122,52,.18); border-color:var(--rose-dark); border-style:solid;
+  transform:scale(1.015); box-shadow:0 0 0 4px rgba(156,122,52,.18);
 }
 .upload-dropzone-title { font-size:16px; color:var(--text); margin-bottom:6px; }
 .upload-dropzone-sub { font-size:13.6px; color:var(--text-muted); }
+.upload-dropzone-title--drop { display:none; color:var(--rose-dark); }
+.upload-dropzone.drag-over .upload-dropzone-title--upload,
+.upload-dropzone.drag-over .upload-dropzone-sub { display:none; }
+.upload-dropzone.drag-over .upload-dropzone-title--drop { display:block; }
+.upload-dropzone.drag-over svg { animation:dropBounce .6s ease-in-out infinite; }
+@keyframes dropBounce { 0%,100%{transform:translateY(0);} 50%{transform:translateY(4px);} }
 .manage-toolbar { display:flex; gap:14px; flex-wrap:wrap; align-items:center; margin-bottom:18px; }
 .manage-search {
   display:flex; align-items:center; gap:8px; flex:1; min-width:200px;
@@ -2053,7 +2196,7 @@ footer { padding:clamp(3.5rem, 6vw, 4.5rem) var(--page-gutter) clamp(2rem, 4vw, 
 
 <!-- WA FLOAT -->
 <a href="https://wa.me/5581995966968" target="_blank" class="wa-float" aria-label="WhatsApp">
-  <div class="wa-tip">Falar no WhatsApp</div>
+  <div class="wa-tip">Fale conosco</div>
   <span class="wa-float-inner">
   <svg width="80" height="80" viewBox="0 0 1254 1254">
     <defs>
@@ -2083,11 +2226,10 @@ footer { padding:clamp(3.5rem, 6vw, 4.5rem) var(--page-gutter) clamp(2rem, 4vw, 
       </div>
     </div>
     <div class="admin-tabs" id="adminTabs" style="display:none;">
-      <button class="atab on" onclick="swTab('overview',this)">Visão Geral</button>
-      <button class="atab"    onclick="swTab('upload',this)">Upload</button>
-      <button class="atab"    onclick="swTab('add',this)">Adicionar Peça</button>
+      <button class="atab on" onclick="swTab('upload',this)">Upload</button>
+      <button class="atab"    onclick="swTab('overview',this)">Visão Geral</button>
+      <button class="atab"    onclick="swTab('crud',this)">Cadastro</button>
       <button class="atab"    onclick="swTab('manage',this)">Gerenciar Catálogo</button>
-      <button class="atab"    onclick="swTab('crud',this)">CRUD Peças</button>
       <button class="atab"    onclick="swTab('banner',this)">Banner</button>
     </div>
     <div class="admin-bd" id="adminBd"></div>
@@ -2097,6 +2239,7 @@ footer { padding:clamp(3.5rem, 6vw, 4.5rem) var(--page-gutter) clamp(2rem, 4vw, 
 <script src="data/products-looks.js"></script>
 <script src="js/supabase-client.js"></script>
 <script src="js/cursor.js"></script>
+<script src="js/keyboard.js"></script>
 <script src="js/page-transition.js"></script>
 <script src="js/catalog-admin.js"></script>
 <script>
@@ -2168,7 +2311,15 @@ let CATS_LIST = [
   { key:'brinco',   label:'Brinco' },
   { key:'pulseira', label:'Pulseira' },
   { key:'anel',     label:'Anel' },
+  { key:'sem-categoria', label:'(Sem categoria)', desc:'Peças sem categoria definida. Aparecem só neste filtro — ficam fora da aba "Todas" do catálogo.' },
 ];
+
+// Categoria padrão/reservada: aparece como filtro no catálogo público (pra
+// achar peças ainda não categorizadas), mas fica de fora da aba "Todas" —
+// só é exibida quando esse filtro específico é selecionado. Não pode ser
+// excluída pelo admin (ver deleteCategory em js/catalog-admin.js). Também é
+// a categoria padrão de uma peça nova recém-cadastrada, até o admin trocar.
+const NO_CATEGORY_KEY = 'sem-categoria';
 
 // Look SVG illustrations — using brand palette
 function bagSVG(cat, color) {
@@ -2212,7 +2363,9 @@ let statusFilter = 'all';
 function renderProducts(filter = 'all') {
   const grid = document.getElementById('pgrid');
   let list = products.filter(p => p.status !== 'hidden');
-  list = filter === 'all' ? list : list.filter(p => p.cat === filter);
+  // "Todas" não mostra peças sem categoria — elas só aparecem quando o
+  // filtro "(Sem categoria)" é escolhido diretamente (ver NO_CATEGORY_KEY).
+  list = filter === 'all' ? list.filter(p => p.cat !== NO_CATEGORY_KEY) : list.filter(p => p.cat === filter);
   if (statusFilter !== 'all') list = list.filter(p => p.status === statusFilter);
 
   const cardHtml = (p) => {
@@ -2511,25 +2664,50 @@ document.querySelectorAll('.reveal').forEach(el => ro.observe(el));
 document.documentElement.classList.add('reveal-ready');
 
 // ─── ADMIN ────────────────────────────────────────────────────────────────────
-let loggedIn = (function(){
-  const t = sessionStorage.getItem('mfl_auth_ts');
+// O acesso ao sessionStorage/localStorage pode lançar SecurityError (ex:
+// Chrome com cookies/dados de site bloqueados). Sem proteção, o script
+// inteiro morre nesta linha e `loggedIn` fica não-inicializada (TDZ): o
+// painel abre VAZIO, sem login nem erro visível. Ver index.html.
+function safeSessionGet(key)      { try { return sessionStorage.getItem(key); } catch (_) { return null; } }
+function safeSessionSet(key, val) { try { sessionStorage.setItem(key, val); } catch (_) {} }
+function safeSessionRemove(key)   { try { sessionStorage.removeItem(key); } catch (_) {} }
+// `var` (e não `let`) de propósito: sem "zona morta" — se um erro anterior
+// matar o script no meio, o painel ainda abre a tela de login.
+var loggedIn = (function(){
+  const t = safeSessionGet('mfl_auth_ts');
   return t && (Date.now() - parseInt(t)) < 600000;
 })();
-const ADMIN_PASS = 'mfb2026';
-let bulkStatusCursor = 'available'; // próximo status a aplicar em massa (botão cíclico do cabeçalho)
+var bulkStatusCursor = bulkStatusCursor || 'available'; // próximo status a aplicar em massa (botão cíclico do cabeçalho)
 
 function openA() {
   const ov = document.getElementById('adminOv');
   ov.classList.add('open');
   requestAnimationFrame(() => requestAnimationFrame(() => ov.classList.add('visible')));
-  if (loggedIn) {
-    renderPanel();
-    setTimeout(() => {
-      const bd = document.getElementById('adminBd');
-      if (bd) bd.scrollTop = 0;
-    }, 50);
-  } else {
-    renderLogin();
+  // Se qualquer coisa quebrar daqui pra baixo, mostra o erro DENTRO do
+  // painel em vez de deixar o corpo vazio sem nenhuma pista.
+  try {
+    if (loggedIn) {
+      renderPanel();
+      setTimeout(() => {
+        const bd = document.getElementById('adminBd');
+        if (bd) bd.scrollTop = 0;
+      }, 50);
+    } else {
+      renderLogin();
+    }
+  } catch (e) {
+    console.error('Falha ao abrir o painel administrativo:', e);
+    const bd = document.getElementById('adminBd');
+    if (bd) {
+      bd.innerHTML = `
+        <div style="padding:40px 20px;text-align:center;">
+          <p style="font-weight:700;color:#7A1E1E;margin-bottom:8px;">Não foi possível carregar o painel.</p>
+          <p style="font-size:13px;color:#A08070;margin-bottom:4px;"></p>
+          <p style="font-size:12px;color:#A08070;">Atualize a página com Ctrl+Shift+R e tente de novo. Se persistir, verifique se o navegador não está bloqueando cookies/dados de site (o painel precisa deles pra manter a sessão).</p>
+        </div>`;
+      const msgEl = bd.querySelector('p:nth-child(2)');
+      if (msgEl) msgEl.textContent = String((e && e.message) || e);
+    }
   }
 }
 function closeA() {
@@ -2585,15 +2763,17 @@ function closeA() {
   trig.addEventListener('touchmove', () => { if (!armed) clearTimeout(pressTimer); }, { passive:true });
 })();
 function adminLogout() {
-  sessionStorage.removeItem('mfb_auth_ts');
-  sessionStorage.removeItem('mfbAdminPassword');
+  // BUGFIX: aqui removia 'mfb_auth_ts' (chave do index), mas o login desta
+  // página grava 'mfl_auth_ts' — o "Sair" não expirava a sessão de verdade.
+  safeSessionRemove('mfl_auth_ts');
+  safeSessionRemove('mfbAdminPassword');
   loggedIn = false;
   renderLogin();
 }
 
 // ═══ LOGIN — senha (principal) ou autenticador (alternativa), nunca os dois
 // juntos — e um caminho de recuperação via e-mail pra Kupim Digital ═════════
-let _loginView = 'password'; // 'password' | 'forgot' | 'altmenu' | 'totp'
+var _loginView = 'password'; // 'password' | 'forgot' | 'altmenu' | 'totp' — var: ver comentário em `var loggedIn`
 
 function renderLogin() {
   document.getElementById('adminTabs').style.display = 'none';
@@ -2672,6 +2852,7 @@ async function _doLoginRequest(extra) {
   });
   const json = await res.json();
   if (!res.ok || json.error) throw new Error(json.error || 'Falha no login');
+  return json;
 }
 
 async function tryLoginPassword() {
@@ -2679,9 +2860,11 @@ async function tryLoginPassword() {
   const btn = document.getElementById('loginBtn');
   btn.disabled = true; btn.textContent = 'Verificando...';
   try {
-    await _doLoginRequest({ password: pw });
-    loggedIn = true; sessionStorage.setItem('mfl_auth_ts', Date.now());
-    sessionStorage.setItem('mfbAdminPassword', pw);
+    const json = await _doLoginRequest({ password: pw });
+    loggedIn = true; safeSessionSet('mfl_auth_ts', Date.now());
+    // Token de sessão devolvido pelo servidor (ver index.html) — com
+    // fallback pra senha digitada se a Edge Function ainda for a antiga.
+    safeSessionSet('mfbAdminPassword', (json.data && json.data.token) || pw);
     renderPanel();
   } catch (e) {
     document.getElementById('lerr').textContent = 'Senha incorreta. Tente novamente.';
@@ -2696,9 +2879,11 @@ async function tryLoginTotp() {
   const btn = document.getElementById('loginBtn');
   btn.disabled = true; btn.textContent = 'Verificando...';
   try {
-    await _doLoginRequest({ totp: code });
-    loggedIn = true; sessionStorage.setItem('mfl_auth_ts', Date.now());
-    sessionStorage.setItem('mfbAdminPassword', ADMIN_PASS);
+    const json = await _doLoginRequest({ totp: code });
+    loggedIn = true; safeSessionSet('mfl_auth_ts', Date.now());
+    // Login por autenticador: o token de sessão do servidor autoriza as
+    // demais chamadas — sem senha hardcoded no front.
+    safeSessionSet('mfbAdminPassword', (json.data && json.data.token) || '');
     renderPanel();
   } catch (e) {
     document.getElementById('lerr').textContent = 'Código inválido ou expirado. Tente novamente.';
@@ -2757,11 +2942,12 @@ function renderPanel() {
   const firstTab = document.querySelector('#adminTabs .atab');
   if (firstTab) firstTab.classList.add('on');
   document.getElementById('adminBd').innerHTML = `
-  <div class="apane" id="tab-upload">
+  <div class="apane on" id="tab-upload">
     <div id="uploadDropzone" class="upload-dropzone" onclick="document.getElementById('uploadFileInput').click()">
-      <input type="file" id="uploadFileInput" accept="image/png,image/webp" multiple style="display:none;" onchange="handleGalleryUploadFiles(this.files)">
+      <input type="file" id="uploadFileInput" accept="image/*" multiple style="display:none;" onchange="handleGalleryUploadFiles(this.files)">
       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.55;margin-bottom:14px;"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
-      <p class="upload-dropzone-title">Guarde suas peças aqui (em PNG ou WEBP).</p>
+      <p class="upload-dropzone-title upload-dropzone-title--upload">Guarde suas peças aqui. Convertemos para WEBP e removemos o fundo automaticamente.</p>
+      <p class="upload-dropzone-title upload-dropzone-title--drop">Solte a imagem aqui</p>
       <p class="upload-dropzone-sub">Arraste e solte a imagem aqui, ou clique para escolher no computador</p>
     </div>
     <p id="uploadStatus" style="text-align:center;font-size:12.5px;color:var(--rose-dark);margin-top:14px;min-height:18px;"></p>
@@ -2770,11 +2956,11 @@ function renderPanel() {
     </div>
   </div>
 
-  <div class="apane on" id="tab-overview">
+  <div class="apane" id="tab-overview">
     <div id="overviewBody"></div>
   </div>
 
-  <div class="apane" id="tab-add">
+  <div class="apane" id="tab-add-removed" style="display:none;" hidden>
     <div class="frow">
       <div class="fg"><label class="flabel" for="nn">Nome da Peça</label><input class="fi" id="nn" placeholder="Ex: Colar Aurora"/></div>
       <div class="fg"><label class="flabel" for="np">Preço</label><input class="fi" id="np" placeholder="R$ 129"/></div>
@@ -2875,8 +3061,9 @@ function renderPanel() {
         <div class="crud-image-tools">
           <label class="crud-upload"><input id="crudNewImage" type="file" accept="image/png,image/jpeg,image/webp" onchange="previewCrudNewImage(this)"><span id="crudUploadText">Escolher imagem</span><img id="crudNewPreview" alt="Prévia da nova peça"></label>
           <button type="button" class="crud-remove-bg" id="crudRemoveBg" onclick="removeCrudNewBackground()" disabled>Remover fundo</button>
+          <button type="button" class="crud-gen-btn" id="crudGenBtn" onclick="openGenModal('new')">✨ Gerar nome e descrição</button>
         </div>
-        <label><span>Nome</span><input class="fi" id="crudNewName" placeholder="Ex: Colar Luma"></label>
+        <label><span>Nome</span><input class="fi" id="crudNewName" placeholder="Ex: Colar Luma" style="width:100%;"></label>
         <label><span>Preço</span><input class="fi" id="crudNewPrice" inputmode="numeric" placeholder="Ex: R$ 149"></label>
         <label><span>Categoria</span>
           <select class="fi" id="crudNewCat" style="display:none;"></select>
@@ -2890,10 +3077,7 @@ function renderPanel() {
         <label class="crud-desc-field" style="grid-column:1/-1;">
           <span>Descrição</span>
           <textarea class="fi" id="crudNewDesc" rows="3" placeholder="Ex: Colar em metal dourado, ideal para compor um look diário. Fecho ajustável." style="resize:vertical;width:100%;font-family:'Jost',sans-serif;"></textarea>
-          <div style="display:flex;align-items:center;gap:10px;margin-top:6px;">
-            <button type="button" class="fb" style="margin-top:0;background:transparent;color:var(--rose-dark);border:1px solid var(--rose-dark);font-size:13.6px;padding:8px 14px;" id="crudGenDescBtn" onclick="generateCrudNewDesc()" disabled title="Escolha a foto da peça primeiro">Gerar descrição</button>
-            <span id="crudGenDescStatus" style="font-size:12.5px;color:var(--text-muted);">Escolha a foto da peça pra poder gerar a descrição.</span>
-          </div>
+          <p style="font-size:12.5px;color:var(--text-muted);margin-top:6px;">Dica: use o botão "✨ Gerar nome e descrição" ao lado da imagem pra criar nome e descrição de uma vez.</p>
         </label>
       </div>
       <p class="crud-message" id="crudMessage" role="status"></p>
@@ -2940,6 +3124,10 @@ function renderCrudNewCatSelect() {
   const cur = sel.value;
   sel.innerHTML = CATS_LIST.map(c => `<option value="${c.key}">${c.label}</option>`).join('');
   if (CATS_LIST.some(c => c.key === cur)) sel.value = cur;
+  // Padrão pra peça nova ainda não tocada pelo admin: "(Sem categoria)" —
+  // evita cadastrar sem querer numa categoria de verdade só porque era a
+  // primeira da lista.
+  else if (typeof NO_CATEGORY_KEY !== 'undefined' && CATS_LIST.some(c => c.key === NO_CATEGORY_KEY)) sel.value = NO_CATEGORY_KEY;
   else if (CATS_LIST[0]) sel.value = CATS_LIST[0].key;
   const c = CATS_LIST.find(c => c.key === sel.value);
   const label = document.getElementById('crudNewCatBtnLabel');
@@ -3099,13 +3287,26 @@ function initUploadTab() {
   // aba do zero), o novo elemento é religado normalmente.
   if (!zone || zone.dataset.dndBound) return;
   zone.dataset.dndBound = '1';
-  ['dragenter', 'dragover'].forEach(ev => zone.addEventListener(ev, e => {
-    e.preventDefault(); zone.classList.add('drag-over');
-  }));
-  ['dragleave', 'drop'].forEach(ev => zone.addEventListener(ev, e => {
-    e.preventDefault(); zone.classList.remove('drag-over');
-  }));
+  // Contador de profundidade em vez de add/remove cru: como a zona tem
+  // filhos (svg + textos), o dragleave dispara toda vez que o mouse passa
+  // por cima deles, o que fazia a classe drag-over "piscar" sem parar
+  // durante o arraste e o destaque visual sumir na prática.
+  let dragDepth = 0;
+  zone.addEventListener('dragenter', e => {
+    e.preventDefault();
+    dragDepth++;
+    zone.classList.add('drag-over');
+  });
+  zone.addEventListener('dragover', e => e.preventDefault());
+  zone.addEventListener('dragleave', e => {
+    e.preventDefault();
+    dragDepth = Math.max(0, dragDepth - 1);
+    if (dragDepth === 0) zone.classList.remove('drag-over');
+  });
   zone.addEventListener('drop', e => {
+    e.preventDefault();
+    dragDepth = 0;
+    zone.classList.remove('drag-over');
     if (e.dataTransfer?.files?.length) handleGalleryUploadFiles(e.dataTransfer.files);
   });
 }
@@ -3114,7 +3315,9 @@ function pad2(n) { return String(n).padStart(2, '0'); }
 
 // Consulta a galeria pra saber quantas peças já foram enviadas HOJE (o
 // contador reinicia sozinho todo dia, porque é sempre recontado na hora).
-async function nextBagUploadNames(count, exts) {
+// Devolve só os nomes-base (sem extensão nem tag), pra quem for montar o
+// nome final (com "(original)"/"(sem fundo)" etc) por conta própria.
+async function nextBagUploadBaseNames(count) {
   const now = new Date();
   const dateStr = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
   let startN = 1;
@@ -3126,14 +3329,17 @@ async function nextBagUploadNames(count, exts) {
       .length;
     startN = used + 1;
   } catch (e) { /* segue com startN=1 se a galeria não puder ser lida */ }
-  const names = [];
+  const bases = [];
   for (let i = 0; i < count; i++) {
     const t = new Date(now.getTime() + i * 1000); // evita colidir no mesmo segundo
     const timeStr = `${pad2(t.getHours())}-${pad2(t.getMinutes())}-${pad2(t.getSeconds())}`;
-    const ext = (exts && exts[i]) || 'png';
-    names.push(`Peca ${dateStr} ${timeStr} ${startN + i}.${ext}`);
+    bases.push(`Peca ${dateStr} ${timeStr} ${startN + i}`);
   }
-  return names;
+  return bases;
+}
+async function nextBagUploadNames(count, exts) {
+  const bases = await nextBagUploadBaseNames(count);
+  return bases.map((base, i) => `${base}.${(exts && exts[i]) || 'png'}`);
 }
 
 // Extensão de arquivo a partir do MIME type — usada pra manter PNG como
@@ -3141,6 +3347,19 @@ async function nextBagUploadNames(count, exts) {
 function extFromMime(type) {
   if (type === 'image/webp') return 'webp';
   return 'png';
+}
+
+// Extensão de um File qualquer (qualquer formato de imagem, não só PNG/WEBP)
+// — usada como fallback quando a conversão pra WEBP falha, pra guardar a
+// imagem original no formato em que ela realmente veio.
+function extFromFile(file) {
+  const byMime = {
+    'image/webp': 'webp', 'image/png': 'png', 'image/jpeg': 'jpg',
+    'image/gif': 'gif', 'image/bmp': 'bmp', 'image/avif': 'avif',
+  }[file.type];
+  if (byMime) return byMime;
+  const m = /\.([a-z0-9]+)$/i.exec(file.name || '');
+  return m ? m[1].toLowerCase() : 'png';
 }
 
 function fileToDataUrl(file) {
@@ -3152,40 +3371,99 @@ function fileToDataUrl(file) {
   });
 }
 
+// Fluxo automático de upload: pra cada imagem solta/escolhida —
+//   1) tenta converter pra WEBP; se o navegador não conseguir decodificar o
+//      arquivo (ex: HEIC de iPhone), guarda a imagem original no formato em
+//      que ela veio mesmo, sem travar o upload — marcada "(original)";
+//   2) tenta remover o fundo automaticamente (remove.bg) e guarda o
+//      resultado também convertido pra WEBP (com o mesmo fallback) —
+//      marcado "(sem fundo)". Se a remoção de fundo falhar, a imagem
+//      original ainda assim já foi salva; só a cópia sem fundo é pulada.
 async function handleGalleryUploadFiles(fileList) {
-  const files = Array.from(fileList || []).filter(f => f.type === 'image/png' || f.type === 'image/webp');
+  const files = Array.from(fileList || []).filter(f => f.type.startsWith('image/'));
   const status = document.getElementById('uploadStatus');
   if (!files.length) {
-    if (status) status.textContent = 'Só é permitido enviar imagens no formato PNG ou WEBP.';
+    if (status) status.textContent = 'Só é permitido enviar arquivos de imagem.';
     return;
   }
-  if (status) status.textContent = `Enviando ${files.length} imagem${files.length > 1 ? 's' : ''}…`;
+  let bases;
   try {
-    const names = await nextBagUploadNames(files.length, files.map(f => extFromMime(f.type)));
-    for (let i = 0; i < files.length; i++) {
-      const dataUrl = await fileToDataUrl(files[i]);
-      await sbUploadGalleryImage(dataUrl, names[i]);
-    }
-    if (status) status.textContent = `${files.length} imagem${files.length > 1 ? 's' : ''} guardada${files.length > 1 ? 's' : ''} na galeria.`;
-    document.getElementById('uploadFileInput').value = '';
-    openGalleryModal();
+    bases = await nextBagUploadBaseNames(files.length);
   } catch (e) {
     if (status) status.textContent = `Erro ao enviar: ${e.message}`;
+    return;
   }
+  let savedCount = 0, bgFailCount = 0, convertFailCount = 0;
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    const base = bases[i];
+    if (status) status.textContent = `Enviando imagem ${i + 1} de ${files.length}…`;
+    try {
+      let originalDataUrl, originalExt;
+      try {
+        originalDataUrl = await convertToWebp(file, .92);
+        originalExt = 'webp';
+      } catch (convErr) {
+        originalDataUrl = await fileToDataUrl(file);
+        originalExt = extFromFile(file);
+        convertFailCount++;
+      }
+      await sbUploadGalleryImage(originalDataUrl, `${base} (original).${originalExt}`);
+
+      if (status) status.textContent = `Removendo o fundo da imagem ${i + 1} de ${files.length}…`;
+      try {
+        const noBgRaw = await sbRemoveBackground(file);
+        let noBgDataUrl, noBgExt;
+        try {
+          noBgDataUrl = await convertToWebp(noBgRaw, 1);
+          noBgExt = 'webp';
+        } catch (convErr2) {
+          noBgDataUrl = noBgRaw;
+          noBgExt = 'png';
+        }
+        await sbUploadGalleryImage(noBgDataUrl, `${base} (sem fundo).${noBgExt}`);
+      } catch (bgErr) {
+        bgFailCount++;
+      }
+      savedCount++;
+    } catch (e) {
+      if (status) status.textContent = `Erro ao enviar "${file.name}": ${e.message}`;
+      return;
+    }
+  }
+  let msg = `${savedCount} imagem${savedCount > 1 ? 's' : ''} guardada${savedCount > 1 ? 's' : ''} na galeria (original + sem fundo).`;
+  if (bgFailCount) msg += ` ${bgFailCount} sem remoção de fundo (falhou).`;
+  if (convertFailCount) msg += ` ${convertFailCount} original${convertFailCount > 1 ? 'is' : ''} mantida${convertFailCount > 1 ? 's' : ''} no formato de origem (conversão pra WEBP falhou).`;
+  if (status) status.textContent = msg;
+  document.getElementById('uploadFileInput').value = '';
+  openGalleryModal();
 }
 
 // ── Galeria (modal) ─────────────────────────────────────────────────────────
 let _galleryImages = [];
 let _gallerySort = 'desc';        // 'desc' | 'asc' — por data de envio
 let _galleryFilter = 'all';       // 'all' | 'original' | 'nobg'
-let _galleryFormatFilter = 'all'; // 'all' | 'png' | 'webp'
+let _galleryFormatFilter = 'all'; // 'all' | 'nonwebp' | 'webp'
 let _galleryPickerCallback = null; // quando definida, a galeria abre em "modo escolher"
 let _galleryHideUpload = false;   // quando true, esconde as opções de "enviar nova foto" (só navegar as já existentes)
 
-function isGalleryNoBg(name) { return / \(sem fundo\)\.png$/i.test(name); }
+function isGalleryNoBg(name) { return / \(sem fundo\)\.(png|webp)$/i.test(name); }
+function isGalleryOriginal(name) { return / \(original\)\./i.test(name); }
 function isGalleryCopy(name) { return / - Cópia \d+/i.test(name); }
 function isGalleryWebp(name) { return /\.webp$/i.test(name); }
-function isGalleryPng(name)  { return /\.png$/i.test(name); }
+// Qualquer imagem que NÃO seja WEBP (jpg, jpeg, png, bmp, gif...) — usada no
+// filtro "Não-WEBP" da galeria, pra achar tudo que ainda precisa/pode ser
+// convertido, não só os PNG.
+function isGalleryNonWebp(name) { return !isGalleryWebp(name); }
+
+// Ordem PADRÃO da galeria (critério primário): WEBP sem fundo → WEBP com
+// fundo → o restante (não-WEBP). Dentro de cada grupo mantém a ordem por data.
+function galleryRank(name) {
+  const webp = isGalleryWebp(name);
+  if (webp && isGalleryNoBg(name)) return 0; // WEBP sem fundo
+  if (webp) return 1;                        // WEBP com fundo
+  return 2;                                   // o restante (não-WEBP)
+}
 
 // Formata bytes como texto legível (KB/MB) — usado no total de espaço
 // ocupado pela galeria.
@@ -3225,13 +3503,14 @@ async function openGalleryModal(onPick, opts) {
           </div>
           <div class="gal-filter-group" id="galFilterFormat">
             <button class="gal-chip on" data-ff="all" onclick="setGalleryFormatFilter('all')">Todos os formatos</button>
-            <button class="gal-chip" data-ff="png" onclick="setGalleryFormatFilter('png')">PNG</button>
+            <button class="gal-chip" data-ff="nonwebp" onclick="setGalleryFormatFilter('nonwebp')">Não-WEBP</button>
             <button class="gal-chip" data-ff="webp" onclick="setGalleryFormatFilter('webp')">WEBP</button>
           </div>
           <div style="flex:1;"></div>
           <span id="galSizeLabel" style="font-size:12.5px;color:var(--text-muted);letter-spacing:.04em;white-space:nowrap;"></span>
           <button class="gal-chip" onclick="toggleGallerySort()" id="galSortBtn">Mais recentes primeiro</button>
           <button type="button" class="fb" id="galUploadFooterBtn" style="margin-top:0;" onclick="document.getElementById('uploadFileInput').click()">+ Enviar foto</button>
+          <button type="button" class="fb" id="galDeleteFilteredBtn" style="margin-top:0;background:transparent;color:#b83232;border:1px solid #b83232;" onclick="deleteFilteredGalleryImages()" title="Apaga todas as imagens que estão passando pelo filtro atual">Excluir filtrados</button>
         </div>
         <div id="galleryGrid" style="flex:1;overflow-y:auto;padding:20px 26px;display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px;"></div>
       </div>`;
@@ -3242,6 +3521,8 @@ async function openGalleryModal(onPick, opts) {
   document.getElementById('galleryPickerBanner').style.display = (_galleryPickerCallback && !_galleryHideUpload) ? 'block' : 'none';
   const uploadFooterBtn = document.getElementById('galUploadFooterBtn');
   if (uploadFooterBtn) uploadFooterBtn.style.display = _galleryHideUpload ? 'none' : 'inline-flex';
+  const deleteFilteredBtn = document.getElementById('galDeleteFilteredBtn');
+  if (deleteFilteredBtn) deleteFilteredBtn.style.display = _galleryPickerCallback ? 'none' : 'inline-flex';
   ov.style.display = 'flex';
   await refreshGalleryGrid();
 }
@@ -3288,6 +3569,33 @@ async function refreshGalleryGrid() {
   renderGalleryGrid();
 }
 
+// Apaga de uma vez todas as imagens que estão passando pelos filtros ativos
+// no momento (original/sem fundo + formato) — não as que estão fora dele.
+async function deleteFilteredGalleryImages() {
+  const list = getFilteredGalleryList();
+  if (!list.length) {
+    showToast('Nenhuma imagem no filtro atual.');
+    return;
+  }
+  const label = _galleryFilter === 'original' ? 'originais' : _galleryFilter === 'nobg' ? 'sem fundo' : 'imagens';
+  const formatLabel = _galleryFormatFilter === 'nonwebp' ? ' não-WEBP' : _galleryFormatFilter === 'webp' ? ' WEBP' : '';
+  if (!confirm(`Apagar ${list.length}${formatLabel} ${label} da galeria (filtro atual)? Essa ação não pode ser desfeita.`)) return;
+  const btn = document.getElementById('galDeleteFilteredBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Apagando…'; }
+  let okCount = 0, failCount = 0;
+  for (const img of list) {
+    try {
+      await sbDeleteGalleryImage(img.name);
+      okCount++;
+    } catch (e) {
+      failCount++;
+    }
+  }
+  await refreshGalleryGrid();
+  if (btn) { btn.disabled = false; btn.textContent = 'Excluir filtrados'; }
+  showToast(failCount ? `${okCount} apagada${okCount === 1 ? '' : 's'}, ${failCount} falharam.` : `${okCount} imagem${okCount === 1 ? '' : 'ns'} apagada${okCount === 1 ? '' : 's'}.`);
+}
+
 function setGalleryFilter(f) {
   _galleryFilter = f;
   document.querySelectorAll('#galFilterOriginal .gal-chip').forEach(b => b.classList.toggle('on', b.dataset.f === f));
@@ -3304,22 +3612,28 @@ function toggleGallerySort() {
   renderGalleryGrid();
 }
 
-function renderGalleryGrid() {
-  const grid = document.getElementById('galleryGrid');
-  if (!grid) return;
+// Aplica os filtros ativos (original/sem fundo + formato) à lista completa
+// da galeria. Compartilhada entre a renderização do grid e o botão
+// "Excluir filtrados", pra garantir que os dois sempre concordem sobre
+// quais imagens estão "visíveis" no momento.
+function getFilteredGalleryList() {
   let list = _galleryImages.slice();
   if (_galleryFilter === 'original') list = list.filter(i => !isGalleryNoBg(i.name));
   if (_galleryFilter === 'nobg') list = list.filter(i => isGalleryNoBg(i.name));
-  if (_galleryFormatFilter === 'png')  list = list.filter(i => isGalleryPng(i.name));
+  if (_galleryFormatFilter === 'nonwebp') list = list.filter(i => isGalleryNonWebp(i.name));
   if (_galleryFormatFilter === 'webp') list = list.filter(i => isGalleryWebp(i.name));
+  return list;
+}
+
+function renderGalleryGrid() {
+  const grid = document.getElementById('galleryGrid');
+  if (!grid) return;
+  let list = getFilteredGalleryList();
   list.sort((a, b) => {
-    // No modo "escolher imagem" (CRUD), fotos sem fundo vêm sempre primeiro —
-    // é o que pode entrar no catálogo, então é o que a lojista mais precisa achar rápido.
-    if (_galleryPickerCallback) {
-      const nbA = isGalleryNoBg(a.name) ? 0 : 1;
-      const nbB = isGalleryNoBg(b.name) ? 0 : 1;
-      if (nbA !== nbB) return nbA - nbB;
-    }
+    // Ordem padrão: WEBP sem fundo → WEBP com fundo → o restante (não-WEBP).
+    // Serve tanto pra galeria normal quanto pro modo "escolher imagem".
+    const ra = galleryRank(a.name), rb = galleryRank(b.name);
+    if (ra !== rb) return ra - rb;
     const da = new Date(a.created_at).getTime(), db = new Date(b.created_at).getTime();
     return _gallerySort === 'desc' ? db - da : da - db;
   });
@@ -3327,7 +3641,7 @@ function renderGalleryGrid() {
   const sizeLabel = document.getElementById('galSizeLabel');
   if (sizeLabel) {
     const totalBytes = list.reduce((sum, i) => sum + (i.size || 0), 0);
-    const formatName = _galleryFormatFilter === 'png' ? 'PNG' : _galleryFormatFilter === 'webp' ? 'WEBP' : 'no total';
+    const formatName = _galleryFormatFilter === 'nonwebp' ? 'não-WEBP' : _galleryFormatFilter === 'webp' ? 'WEBP' : 'no total';
     sizeLabel.textContent = `${list.length} imagem${list.length === 1 ? '' : 'ns'} · ${formatName === 'no total' ? '' : formatName + ' · '}${formatBytes(totalBytes)} ocupados`;
   }
 
@@ -3336,12 +3650,8 @@ function renderGalleryGrid() {
     return;
   }
   grid.innerHTML = list.map(img => {
-    // No modo "escolher imagem", fotos SEM o fundo removido ficam com opacidade
-    // reduzida — ainda clicáveis, mas visualmente sinalizando que não estão
-    // prontas pro catálogo (que exige fundo removido).
-    const dimNotReady = _galleryPickerCallback && !isGalleryNoBg(img.name);
     return `
-    <div class="gal-card"${dimNotReady ? ' style="opacity:.4;transition:opacity .2s;" onmouseenter="this.style.opacity=1" onmouseleave="this.style.opacity=.4"' : ''}>
+    <div class="gal-card">
       <div class="gal-card-img" role="button" tabindex="0" aria-label="Ampliar ${_pimEscape(img.name)}" onclick="openImageZoom('${_pimEscape(img.url)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openImageZoom('${_pimEscape(img.url)}');}">
         <img src="${_pimEscape(img.url)}" alt="${_pimEscape(img.name)}" loading="lazy"${isGalleryNoBg(img.name) ? ' class="gal-img-float"' : ''}>
         <span class="gal-badge gal-badge-format ${isGalleryWebp(img.name) ? 'gal-badge-webp' : 'gal-badge-png'}">${isGalleryWebp(img.name) ? 'WEBP' : 'PNG'}</span>
@@ -3876,25 +4186,83 @@ function renderCrudBags() {
     list.innerHTML = '<div class="crud-empty">Nenhuma peça cadastrada.</div>';
     return;
   }
-  list.innerHTML = products.map(p => `
-    <article class="crud-row" data-crud-id="${p.id}">
-      <div class="crud-thumb">${p.img ? `<img src="${_pimEscape(p.img)}" alt="${_pimEscape(p.name)}">` : '<span>Sem imagem</span>'}</div>
-      <label class="crud-field"><span>Nome</span><input class="fi" id="crudName-${p.id}" value="${_pimEscape(p.name)}"></label>
-      <label class="crud-field crud-price"><span>Preço</span><input class="fi" id="crudPrice-${p.id}" value="${_pimEscape(p.price)}" inputmode="numeric"></label>
-      <label class="crud-field crud-desc-field" style="grid-column:1/-1;">
-        <span>Descrição</span>
-        <textarea class="fi" id="crudDesc-${p.id}" rows="3" style="resize:vertical;width:100%;font-family:'Jost',sans-serif;">${_pimEscape(p.desc || '')}</textarea>
-        <div style="display:flex;align-items:center;gap:10px;margin-top:6px;">
-          <button type="button" class="crud-btn" id="crudGenDescBtn-${p.id}" onclick="generateCrudExistingDesc(${p.id})" ${p.img ? '' : 'disabled'} title="${p.img ? '' : 'Esta peça ainda não tem uma foto'}">Gerar descrição</button>
-        </div>
-      </label>
-      <div class="crud-actions">
-        <button type="button" class="crud-btn" onclick="openProductGalleryPicker(${p.id})">Escolher imagem</button>
-        <button type="button" class="crud-btn" onclick="insertProductIntoBanner(${p.id})">Inserir no banner</button>
-        <button type="button" class="crud-btn primary" onclick="saveCrudBag(${p.id})">Salvar</button>
-        <button type="button" class="crud-btn danger" onclick="confirmDel(${p.id})">Excluir</button>
+  // Cada peça vira um CARD compacto e clicável — os campos de edição ficam
+  // no modal (openCrudEditModal), igual ao painel do Bags.
+  list.innerHTML = products.map(p => {
+    const priceTxt = String(p.price ?? '');
+    const priceLabel = priceTxt ? (/^R\$/i.test(priceTxt) ? priceTxt : 'R$ ' + priceTxt) : '—';
+    const statusLabel = (STATUS_BADGE && STATUS_BADGE[p.status]) || '';
+    return `
+    <button type="button" class="crud-card" data-crud-id="${p.id}" onclick="openCrudEditModal(${p.id})" title="Clique para editar">
+      <div class="crud-card-thumb">${p.img ? `<img src="${_pimEscape(p.img)}" alt="${_pimEscape(p.name)}" loading="lazy">` : '<span>Sem imagem</span>'}</div>
+      <div class="crud-card-body">
+        <p class="crud-card-name">${_pimEscape(p.name || 'Sem nome')}</p>
+        <p class="crud-card-price">${_pimEscape(priceLabel)}</p>
+        ${statusLabel ? `<span class="crud-card-status crud-card-status--${p.status}">${statusLabel}</span>` : ''}
       </div>
-    </article>`).join('');
+    </button>`;
+  }).join('');
+}
+
+// Modal de edição de uma peça já cadastrada. Mantém os MESMOS ids de campo
+// (crudName-, crudPrice-, crudDesc-, crudGenDescBtn-) pra reaproveitar
+// saveCrudBag/generateCrudExistingDesc sem alteração. Sem "Gerar nome" — esse
+// recurso é exclusivo do painel do Bags.
+function openCrudEditModal(id) {
+  const p = products.find(x => x.id === id);
+  if (!p) return;
+  closeCrudEditModal();
+  const wrap = document.createElement('div');
+  wrap.id = 'crudEditModal';
+  wrap.className = 'crud-modal-ov';
+  wrap.addEventListener('click', (e) => { if (e.target === wrap) closeCrudEditModal(); });
+  wrap.innerHTML = `
+    <div class="crud-modal" role="dialog" aria-modal="true" aria-label="Editar peça">
+      <div class="crud-modal-hd">
+        <span class="crud-modal-title">Editar peça</span>
+        <button type="button" class="crud-modal-x" onclick="closeCrudEditModal()" aria-label="Fechar">✕</button>
+      </div>
+      <div class="crud-modal-bd">
+        <div class="crud-modal-imgcol">
+          <div class="crud-thumb crud-modal-thumb">${p.img ? `<img src="${_pimEscape(p.img)}" alt="${_pimEscape(p.name)}">` : '<span>Sem imagem</span>'}</div>
+          <button type="button" class="crud-btn" onclick="openProductGalleryPicker(${p.id})">Escolher imagem</button>
+          <button type="button" class="crud-btn" onclick="insertProductIntoBanner(${p.id})">Inserir no banner</button>
+          <button type="button" class="crud-btn crud-gen-btn-sm" onclick="openGenModal(${p.id})">✨ Gerar nome e descrição</button>
+        </div>
+        <div class="crud-modal-fields">
+          <label class="crud-field"><span>Nome</span>
+            <input class="fi" id="crudName-${p.id}" value="${_pimEscape(p.name)}">
+          </label>
+          <label class="crud-field"><span>Preço</span>
+            <div class="price-input-wrap">
+              <span class="price-prefix" aria-hidden="true">R$</span>
+              <input class="fi" id="crudPrice-${p.id}" value="${_pimEscape(priceNum(p.price))}" inputmode="numeric">
+            </div>
+          </label>
+          <label class="crud-field"><span>Descrição</span>
+            <textarea class="fi" id="crudDesc-${p.id}" rows="4" style="resize:vertical;width:100%;font-family:'Jost',sans-serif;">${_pimEscape(p.desc || '')}</textarea>
+          </label>
+        </div>
+      </div>
+      <div class="crud-modal-ft">
+        <button type="button" class="crud-btn danger" onclick="confirmDel(${p.id})">Excluir</button>
+        <span class="crud-spacer"></span>
+        <button type="button" class="crud-btn" onclick="closeCrudEditModal()">Cancelar</button>
+        <button type="button" class="crud-btn primary" onclick="saveCrudBag(${p.id})">Salvar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(wrap);
+  requestAnimationFrame(() => wrap.classList.add('visible'));
+  const nameEl = document.getElementById(`crudName-${id}`);
+  if (nameEl) { nameEl.focus(); try { nameEl.setSelectionRange(nameEl.value.length, nameEl.value.length); } catch (_) {} }
+  wrap._escHandler = (e) => { if (e.key === 'Escape') closeCrudEditModal(); };
+  document.addEventListener('keydown', wrap._escHandler);
+}
+function closeCrudEditModal() {
+  const m = document.getElementById('crudEditModal');
+  if (!m) return;
+  if (m._escHandler) document.removeEventListener('keydown', m._escHandler);
+  m.remove();
 }
 
 async function generateCrudExistingDesc(id) {
@@ -3919,7 +4287,10 @@ function saveCrudBag(id) {
   const name = document.getElementById(`crudName-${id}`)?.value.trim();
   const price = formatCrudPrice(document.getElementById(`crudPrice-${id}`)?.value);
   const desc = document.getElementById(`crudDesc-${id}`)?.value.trim() || '';
-  if (!product || !name || !price) return;
+  if (!product || !name || !price) {
+    showToast('Preencha nome e preço antes de salvar.');
+    return;
+  }
   product.name = name;
   product.price = price;
   product.desc = desc;
@@ -3928,6 +4299,215 @@ function saveCrudBag(id) {
   renderAdminList();
   renderOverviewTab();
   renderCrudBags();
+  closeCrudEditModal();
+  showToast(`"${name}" atualizada. Lembre de "Revisar e Salvar" pra publicar.`);
+}
+
+// ── Gerador unificado: NOME + DESCRIÇÃO (Gemini) — espelho do painel Bags ────
+// Um único modal, reaproveitado pelo form "Cadastrar nova peça" (ctx='new') e
+// pelo modal de edição (ctx = id). Gera nome (aleatório/foto/descrição, 2 ou
+// 3 sílabas) e, quando há foto, também a descrição. Erros inline no modal.
+let genCtx = null;
+let genMode = 'random';
+
+function openGenModal(ctx) {
+  genCtx = ctx;
+  genMode = 'random';
+  document.querySelectorAll('#genModeGroup .gal-chip').forEach(b => b.classList.toggle('on', b.dataset.mode === 'random'));
+  _genClearErr();
+  const status = document.getElementById('genStatus');
+  if (status) status.textContent = '';
+  const namesWrap = document.getElementById('genNamesWrap');
+  if (namesWrap) namesWrap.style.display = 'none';
+  const descWrap = document.getElementById('genDescWrap');
+  if (descWrap) descWrap.style.display = 'none';
+  const chips = document.getElementById('genChips');
+  if (chips) chips.innerHTML = '';
+  const promptWrap = document.getElementById('genPromptWrap');
+  if (promptWrap) promptWrap.style.display = 'none';
+  const promptText = document.getElementById('genPromptText');
+  if (promptText) promptText.value = '';
+  const modal = document.getElementById('genModal');
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+function closeGenModal() {
+  const m = document.getElementById('genModal');
+  if (m) m.style.display = 'none';
+  document.body.style.overflow = '';
+  genCtx = null;
+}
+function setGenMode(mode) {
+  genMode = mode;
+  document.querySelectorAll('#genModeGroup .gal-chip').forEach(b => b.classList.toggle('on', b.dataset.mode === mode));
+  const promptWrap = document.getElementById('genPromptWrap');
+  if (promptWrap) promptWrap.style.display = mode === 'description' ? 'block' : 'none';
+}
+function _genShowErr(msg) {
+  const el = document.getElementById('genErr');
+  if (el) { el.textContent = msg; el.style.display = 'block'; }
+}
+function _genClearErr() {
+  const el = document.getElementById('genErr');
+  if (el) { el.textContent = ''; el.style.display = 'none'; }
+}
+function _genImageSource(ctx) {
+  if (ctx === 'new') return typeof crudNewImageSource === 'string' ? crudNewImageSource : crudNewFile;
+  const product = products.find(p => p.id === ctx);
+  return product ? product.img : null;
+}
+function _genPromptText() {
+  return document.getElementById('genPromptText')?.value.trim() || '';
+}
+function _genNameInput(ctx) {
+  return ctx === 'new' ? document.getElementById('crudNewName') : document.getElementById(`crudName-${ctx}`);
+}
+function _genDescInput(ctx) {
+  return ctx === 'new' ? document.getElementById('crudNewDesc') : document.getElementById(`crudDesc-${ctx}`);
+}
+function _genMeta(ctx) {
+  if (ctx === 'new') {
+    return {
+      name: document.getElementById('crudNewName')?.value.trim() || '',
+      cat: document.getElementById('crudNewCat')?.value || '',
+      price: formatCrudPrice(document.getElementById('crudNewPrice')?.value) || '',
+    };
+  }
+  const product = products.find(p => p.id === ctx) || {};
+  return {
+    name: document.getElementById(`crudName-${ctx}`)?.value.trim() || product.name || '',
+    cat: product.cat || '',
+    price: document.getElementById(`crudPrice-${ctx}`)?.value || product.price || '',
+  };
+}
+
+// Resolve a imagem do contexto (string URL ou File) → data URL, se houver.
+async function _genResolveImage(ctx) {
+  const source = _genImageSource(ctx);
+  try {
+    if (source) return typeof source === 'string' ? source : await fileToDataUrl(source);
+  } catch (_) {}
+  return null;
+}
+
+// Gera só o(s) NOME(s) sugerido(s), respeitando o modo atual (aleatório/foto/prompt).
+async function _doGenerateName(ctx, imageDataUrl) {
+  const namesWrap = document.getElementById('genNamesWrap');
+  const chips = document.getElementById('genChips');
+  const syllablesRaw = document.getElementById('genSyllables')?.value;
+  const syllables = syllablesRaw === '2' ? 2 : syllablesRaw === '3' ? 3 : null;
+  const promptText = _genPromptText();
+
+  if (genMode === 'photo' && !imageDataUrl) { _genShowErr('Escolha a foto da peça primeiro (ou troque o modo).'); return 'Escolha a foto da peça primeiro (ou troque o modo).'; }
+  if (genMode === 'description' && !promptText) { _genShowErr('Escreva um prompt primeiro (ou troque o modo).'); return 'Escreva um prompt primeiro (ou troque o modo).'; }
+
+  if (chips) chips.innerHTML = '';
+  if (namesWrap) namesWrap.style.display = 'none';
+
+  try {
+    const nameResult = await sbGenerateBagName({
+      mode: genMode,
+      image: genMode === 'photo' ? imageDataUrl : null,
+      description: genMode === 'description' ? promptText : '',
+      syllables,
+    });
+    const names = nameResult?.names || [];
+    if (names.length && chips) {
+      chips.innerHTML = names.map(n => { const s = _pimEscape(n.name); return `<button type="button" class="gal-chip" data-name="${s}" onclick="pickGenName(this.dataset.name, this)">${s}</button>`; }).join('');
+      if (namesWrap) namesWrap.style.display = 'block';
+      return '';
+    }
+    return nameResult?.needMoreDetailMessage || 'Não veio nenhum nome — tente de novo.';
+  } catch (e) {
+    return `Nome: ${e.message}`;
+  }
+}
+
+// Gera a DESCRIÇÃO (2 opções) — só a partir de FOTO ou de PROMPT, nunca no
+// modo Aleatório. `imageDataUrl` e/ou `promptText` chegam já resolvidos pelo
+// chamador conforme o modo selecionado.
+async function _doGenerateDesc(ctx, imageDataUrl, promptText) {
+  const descWrap = document.getElementById('genDescWrap');
+  if (descWrap) descWrap.style.display = 'none';
+  if (!imageDataUrl && !promptText) return 'Escolha a foto ou escreva um prompt pra gerar a descrição.';
+  try {
+    const meta = _genMeta(ctx);
+    const descriptions = await sbGenerateDescription(meta.name, catLabel(meta.cat), meta.price, imageDataUrl, promptText);
+    const p1 = document.getElementById('genDescPreview1');
+    const p2 = document.getElementById('genDescPreview2');
+    if (descriptions.length && p1) {
+      p1.value = descriptions[0] || '';
+      if (p2) p2.value = descriptions[1] || '';
+      if (descWrap) descWrap.style.display = 'block';
+      return '';
+    }
+    return 'A descrição veio vazia — tente de novo.';
+  } catch (e) {
+    return `Descrição: ${e.message}`;
+  }
+}
+
+// Botão "Gerar nome" — gera 10 sugestões, respeitando o modo selecionado.
+async function generateNameOnly() {
+  const ctx = genCtx;
+  const btn = document.getElementById('genNameBtn');
+  const status = document.getElementById('genStatus');
+  _genClearErr();
+
+  const imageDataUrl = await _genResolveImage(ctx);
+  btn.disabled = true; btn.textContent = 'Gerando…';
+  if (status) status.textContent = '';
+
+  const err = await _doGenerateName(ctx, imageDataUrl);
+  if (err) _genShowErr(err);
+  btn.disabled = false; btn.textContent = 'Gerar nome';
+}
+
+// Botão "Gerar descrição" — só funciona nos modos "Usar a foto" ou "Usar
+// prompt". No modo Aleatório mostra uma mensagem explicando o motivo.
+async function generateDescOnly() {
+  const ctx = genCtx;
+  const btn = document.getElementById('genDescBtn');
+  const status = document.getElementById('genStatus');
+  _genClearErr();
+
+  if (genMode === 'random') {
+    _genShowErr('No modo Aleatório não dá pra gerar descrição — escolha "Usar a foto" ou "Usar prompt" primeiro.');
+    return;
+  }
+
+  let imageDataUrl = null;
+  let promptText = '';
+  if (genMode === 'photo') {
+    imageDataUrl = await _genResolveImage(ctx);
+    if (!imageDataUrl) { _genShowErr('Escolha a foto da peça primeiro pra gerar a descrição.'); return; }
+  } else if (genMode === 'description') {
+    promptText = _genPromptText();
+    if (!promptText) { _genShowErr('Escreva um prompt primeiro pra gerar a descrição.'); return; }
+  }
+
+  btn.disabled = true; btn.textContent = 'Gerando…';
+  if (status) status.textContent = '';
+
+  const err = await _doGenerateDesc(ctx, imageDataUrl, promptText);
+  if (err) _genShowErr(err);
+  btn.disabled = false; btn.textContent = 'Gerar descrição';
+}
+
+function pickGenName(name, el) {
+  const input = _genNameInput(genCtx);
+  if (input) input.value = name;
+  document.querySelectorAll('#genChips .gal-chip').forEach(b => b.classList.remove('on'));
+  if (el) el.classList.add('on');
+  const status = document.getElementById('genStatus');
+  if (status) status.textContent = `Nome "${name}" aplicado.`;
+}
+function applyGenDescription(which) {
+  const preview = document.getElementById(`genDescPreview${which}`);
+  const input = _genDescInput(genCtx);
+  if (preview && input) input.value = preview.value;
+  const status = document.getElementById('genStatus');
+  if (status) status.textContent = 'Descrição aplicada.';
 }
 
 async function generateCrudNewDesc() {
@@ -3957,7 +4537,7 @@ async function generateCrudNewDesc() {
 async function addCrudBag() {
   const name = document.getElementById('crudNewName')?.value.trim();
   const price = formatCrudPrice(document.getElementById('crudNewPrice')?.value);
-  const cat = document.getElementById('crudNewCat')?.value || (CATS_LIST[0] ? CATS_LIST[0].key : '');
+  const cat = document.getElementById('crudNewCat')?.value || (typeof NO_CATEGORY_KEY !== 'undefined' ? NO_CATEGORY_KEY : (CATS_LIST[0] ? CATS_LIST[0].key : ''));
   const desc = document.getElementById('crudNewDesc')?.value.trim() || '';
   const message = document.getElementById('crudMessage');
   if (!crudNewFile || !name || !price) {
@@ -4051,6 +4631,18 @@ function pimApplyNewImage(url) {
   renderCrudBags();
   const preview = document.getElementById('pimPreview');
   if (preview) preview.src = url;
+  // Se o modal de edição estiver aberto para este produto, reabre-o pra
+  // mostrar a nova imagem, preservando o que já estava digitado.
+  const editModal = document.getElementById('crudEditModal');
+  if (editModal && _pimCurrentId === product.id) {
+    const curName = document.getElementById(`crudName-${product.id}`)?.value;
+    const curPrice = document.getElementById(`crudPrice-${product.id}`)?.value;
+    const curDesc = document.getElementById(`crudDesc-${product.id}`)?.value;
+    openCrudEditModal(product.id);
+    if (curName != null) { const el = document.getElementById(`crudName-${product.id}`); if (el) el.value = curName; }
+    if (curPrice != null) { const el = document.getElementById(`crudPrice-${product.id}`); if (el) el.value = curPrice; }
+    if (curDesc != null) { const el = document.getElementById(`crudDesc-${product.id}`); if (el) el.value = curDesc; }
+  }
   showToast('Imagem do produto atualizada.');
 }
 function pimChooseFromGallery() {
@@ -4639,7 +5231,8 @@ function openPriceModal(id) {
 }
 
 function priceNum(str) {
-  return (str || '').replace(/^R\$\s*/i, '').trim();
+  // String(...) porque o preço pode chegar como número (banco/cache).
+  return String(str ?? '').replace(/^R\$\s*/i, '').trim();
 }
 
 function toPriceStr(num) {
@@ -4741,7 +5334,8 @@ function confirmDel(id) {
 
 function delProd(id) {
   products = products.filter(x => x.id !== id);
-  markDirty(); renderProducts('all'); renderAdminList(); renderOverviewTab();
+  markDirty(); renderProducts('all'); renderAdminList(); renderOverviewTab(); renderCrudBags();
+  closeCrudEditModal();
   sbDeleteLook(id).catch(e => console.error('Falha ao excluir no banco:', e));
 }
 
@@ -5051,7 +5645,7 @@ const MATCH_BTN_POS_KEY = 'mfb_match_btn_pos_v2';
 function applyMatchButtonVisibility() {
   let btn = document.getElementById('matchHeroBtn');
   // Padrão: visível (só some se o admin marcar explicitamente como "locked" ou "hidden")
-  const visible = (localStorage.getItem('mfb_match_state') || 'visible') === 'visible';
+  const visible = ((function(){ try { return localStorage.getItem('mfb_match_state'); } catch (_) { return null; } })() || 'visible') === 'visible';
   const hero = document.getElementById('hero');
   if (visible) {
     if (!btn && hero) {
@@ -5059,7 +5653,7 @@ function applyMatchButtonVisibility() {
       btn.id = 'matchHeroBtn';
       btn.href = 'match.html?from=looks';
       btn.setAttribute('aria-label', 'Abrir My Favorite Match');
-      btn.innerHTML = `<span class="mhb-visual"></span><span class="mhb-icon-scale"><img src="webp/logo-my-favorite-match-mini.webp" alt="My Favorite Match" width="92" height="92"></span>
+      btn.innerHTML = `<span class="mhb-visual"></span><span class="mhb-icon-scale"><img src="img/match.png" alt="My Favorite Match" width="92" height="92"></span>
         <span class="mhb-tip">My Favorite Match</span>`;
       hero.appendChild(btn);
       // Posição calculada uma única vez (fixa dali em diante, sem
@@ -5139,9 +5733,9 @@ function positionMatchBtn(btn) {
 // página) — e um multiplicador (--float-amp) só pro rotate/scale, na mesma
 // proporção.
 (function () {
-  const AMP_MIN_PX = 20, AMP_MAX_PX = 100; // amplitude vertical (translateY), em pixels
+  const AMP_MIN_PX = 30, AMP_MAX_PX = 130; // amplitude vertical (translateY), em pixels
   const AMP_MID_PX = (AMP_MIN_PX + AMP_MAX_PX) / 2; // usado só como referência pro multiplicador do rotate/scale
-  const AMP_MIN_PX_X = 10, AMP_MAX_PX_X = 50; // amplitude lateral (translateX), em pixels
+  const AMP_MIN_PX_X = 20, AMP_MAX_PX_X = 70; // amplitude lateral (translateX), em pixels
 
   function floatCurve(t) {
     t = Math.min(Math.max(t, 0), 1);
@@ -5530,6 +6124,63 @@ positionBagsBtnMobile();
 </script>
 
 <!-- ═══ ADMIN REVIEW MODAL ══════════════════════════════════════════════════ -->
+<div id="genModal" style="display:none;position:fixed;inset:0;z-index:9200;background:rgba(42,31,24,.75);backdrop-filter:blur(6px);align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:14px;max-width:460px;width:92%;max-height:88svh;overflow-y:auto;padding:28px;" role="dialog" aria-modal="true" aria-label="Gerar nome e descrição">
+    <h3 style="font-size:16px;font-weight:700;color:#2A1F18;margin-bottom:4px;">Gerar nome e descrição</h3>
+    <p style="font-size:13.6px;color:#A08070;margin-bottom:18px;">Escolha como gerar o nome e clique em "Gerar nome". Pra descrição, escolha "Usar a foto" ou "Usar prompt" e clique em "Gerar descrição" — no modo Aleatório não é possível gerar descrição.</p>
+
+    <span style="display:block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#A08070;margin-bottom:6px;">Base para o nome</span>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;" id="genModeGroup">
+      <button type="button" class="gal-chip on" data-mode="random" onclick="setGenMode('random')">Aleatório</button>
+      <button type="button" class="gal-chip" data-mode="photo" onclick="setGenMode('photo')">Usar a foto</button>
+      <button type="button" class="gal-chip" data-mode="description" onclick="setGenMode('description')">Usar prompt</button>
+    </div>
+
+    <div id="genPromptWrap" style="display:none;width:100%;margin-bottom:14px;">
+      <textarea id="genPromptText" rows="3" placeholder="Escreva um prompt pra guiar a geração do nome (ex.: bolsa elegante pra casamento, tons dourados...)" style="width:100%;resize:vertical;font-family:'Jost',sans-serif;border:1px solid var(--line);border-radius:8px;padding:10px;font-size:13.6px;color:#4A3728;"></textarea>
+    </div>
+
+    <label style="display:block;font-size:13.6px;color:#4A3728;margin-bottom:14px;">
+      <span style="display:block;margin-bottom:4px;">Sílabas do nome</span>
+      <select class="fi" id="genSyllables">
+        <option value="">Sem preferência</option>
+        <option value="2">2 sílabas</option>
+        <option value="3">3 sílabas</option>
+      </select>
+    </label>
+
+    <div style="display:flex;gap:10px;margin-top:0;">
+      <button type="button" class="fb" style="margin-top:0;flex:1;" id="genNameBtn" onclick="generateNameOnly()">Gerar nome</button>
+      <button type="button" class="fb" style="margin-top:0;flex:1;" id="genDescBtn" onclick="generateDescOnly()">Gerar descrição</button>
+    </div>
+    <p id="genErr" role="alert" style="display:none;font-size:12.8px;color:#b83232;background:#fbeaea;border:1px solid #e6bcbc;border-radius:8px;padding:8px 10px;margin-top:10px;"></p>
+    <p id="genStatus" style="font-size:12.5px;color:var(--text-muted);margin-top:10px;min-height:16px;"></p>
+
+    <div id="genNamesWrap" style="display:none;margin-top:6px;">
+      <span style="display:block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#A08070;margin-bottom:6px;">Nomes sugeridos — clique pra usar</span>
+      <div id="genChips" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+    </div>
+
+    <div id="genDescWrap" style="display:none;margin-top:16px;">
+      <span style="display:block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#A08070;margin-bottom:6px;">Descrições geradas — escolha uma</span>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div>
+          <textarea id="genDescPreview1" rows="4" readonly style="width:100%;resize:vertical;font-family:'Jost',sans-serif;border:1px solid var(--line);border-radius:8px;padding:10px;font-size:13.6px;color:#4A3728;background:#faf7f4;"></textarea>
+          <button type="button" class="fb" style="margin-top:8px;width:100%;background:transparent;color:var(--rose-dark);border:1px solid var(--rose-dark);" onclick="applyGenDescription(1)">Usar esta descrição</button>
+        </div>
+        <div>
+          <textarea id="genDescPreview2" rows="4" readonly style="width:100%;resize:vertical;font-family:'Jost',sans-serif;border:1px solid var(--line);border-radius:8px;padding:10px;font-size:13.6px;color:#4A3728;background:#faf7f4;"></textarea>
+          <button type="button" class="fb" style="margin-top:8px;width:100%;background:transparent;color:var(--rose-dark);border:1px solid var(--rose-dark);" onclick="applyGenDescription(2)">Usar esta descrição</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;margin-top:22px;">
+      <button type="button" onclick="closeGenModal()" style="flex:1;padding:12px;border:1px solid #D4C5BA;border-radius:8px;background:none;cursor:pointer;font-size:13.6px;">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <div id="reviewModal" style="display:none;position:fixed;inset:0;z-index:9100;background:rgba(32,29,26,.75);backdrop-filter:blur(6px);align-items:center;justify-content:center;">
   <div style="background:#fff;border-radius:14px;max-width:480px;width:92%;max-height:80svh;overflow-y:auto;padding:32px;">
     <h3 style="font-size:15px;font-weight:700;color:#111827;margin-bottom:4px;">Revisão das Configurações</h3>

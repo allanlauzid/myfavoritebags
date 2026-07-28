@@ -160,6 +160,7 @@ function saveNewCategory() {
   CATS_LIST.push({ key: slugifyCat(name), label: name });
   markDirty();
   renderCatSelect();
+  if (typeof renderCrudNewCatSelect === 'function') renderCrudNewCatSelect();
   renderCatFilters();
   const m = document.getElementById('catModal'); if (m) m.remove();
 }
@@ -183,16 +184,23 @@ function openEditCategoryModal() {
 function renderEditCategoryList() {
   const box = document.getElementById('editCatList');
   if (!box) return;
-  box.innerHTML = CATS_LIST.map(c => `
+  // Categoria reservada (NO_CATEGORY_KEY, ex: "(Sem categoria)" em bags) não
+  // pode ser excluída — é usada pelo catálogo público pra separar itens sem
+  // categoria; só existe em páginas que a definem (Looks não tem essa regra).
+  box.innerHTML = CATS_LIST.map(c => {
+    const isProtected = typeof NO_CATEGORY_KEY !== 'undefined' && c.key === NO_CATEGORY_KEY;
+    return `
     <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);">
-      <input class="fi" id="editCatName-${c.key}" value="${c.label}" style="flex:1;">
-      <button onclick="saveCategoryRename('${c.key}')" title="Salvar novo nome"
-        style="padding:9px 12px;border:1px solid var(--rose-dark);background:transparent;color:var(--rose-dark);cursor:pointer;font-size:12px;border-radius:4px;">Salvar</button>
-      <button onclick="deleteCategory('${c.key}')" title="Excluir categoria"
-        style="padding:9px 12px;border:1px solid #b83232;background:transparent;color:#b83232;cursor:pointer;font-size:12px;border-radius:4px;">Excluir</button>
-    </div>`).join('') || `<p style="font-size:12px;color:var(--modal-muted);">Nenhuma categoria cadastrada.</p>`;
+      <input class="fi" id="editCatName-${c.key}" value="${c.label}" style="flex:1;" ${isProtected ? 'disabled' : ''}>
+      <button onclick="saveCategoryRename('${c.key}')" title="Salvar novo nome" ${isProtected ? 'disabled' : ''}
+        style="padding:9px 12px;border:1px solid var(--rose-dark);background:transparent;color:var(--rose-dark);cursor:pointer;font-size:12px;border-radius:4px;${isProtected ? 'opacity:.4;cursor:not-allowed;' : ''}">Salvar</button>
+      <button onclick="deleteCategory('${c.key}')" title="${isProtected ? 'Categoria padrão — não pode ser excluída' : 'Excluir categoria'}" ${isProtected ? 'disabled' : ''}
+        style="padding:9px 12px;border:1px solid #b83232;background:transparent;color:#b83232;cursor:pointer;font-size:12px;border-radius:4px;${isProtected ? 'opacity:.4;cursor:not-allowed;' : ''}">Excluir</button>
+    </div>`;
+  }).join('') || `<p style="font-size:12px;color:var(--modal-muted);">Nenhuma categoria cadastrada.</p>`;
 }
 function saveCategoryRename(key) {
+  if (typeof NO_CATEGORY_KEY !== 'undefined' && key === NO_CATEGORY_KEY) return;
   const input = document.getElementById(`editCatName-${key}`);
   const name = input.value.trim();
   if (!name) return;
@@ -201,11 +209,16 @@ function saveCategoryRename(key) {
   c.label = name;
   markDirty();
   renderCatSelect();
+  if (typeof renderCrudNewCatSelect === 'function') renderCrudNewCatSelect();
   renderCatFilters();
   renderAdminList();
   renderProducts(lastCatFilter);
 }
 function deleteCategory(key) {
+  if (typeof NO_CATEGORY_KEY !== 'undefined' && key === NO_CATEGORY_KEY) {
+    alert('Essa é uma categoria padrão do catálogo e não pode ser excluída.');
+    return;
+  }
   const c = CATS_LIST.find(c => c.key === key);
   if (!c) return;
   const wrap = document.createElement('div');
@@ -225,6 +238,7 @@ function deleteCategory(key) {
     CATS_LIST = CATS_LIST.filter(c => c.key !== key);
     markDirty();
     renderCatSelect();
+    if (typeof renderCrudNewCatSelect === 'function') renderCrudNewCatSelect();
     renderCatFilters();
     renderEditCategoryList();
     renderAdminList();

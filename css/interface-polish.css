@@ -39,10 +39,11 @@ p, li, figcaption, .cat-desc, .hero-sub, .about-body, .login-s,
 .pcard-visual > img { object-fit:contain !important; }
 #modalPhoto { object-fit:contain !important; background:var(--bg2); }
 
-/* Filtros permanecem legíveis durante catálogos longos. */
+/* Filtros: no desktop rolam junto com o catálogo normalmente (sem grudar no
+   topo). O "sticky" continua só no mobile (ver @media(max-width:600px) mais
+   abaixo), onde ainda ajuda a manter o filtro acessível numa tela pequena. */
 .catalog-filter-stack {
-  position:sticky;
-  top:72px;
+  position:static;
   z-index:8;
   margin-bottom:30px;
   padding:12px 0 10px;
@@ -151,6 +152,7 @@ p, li, figcaption, .cat-desc, .hero-sub, .about-body, .login-s,
 
 @media(max-width:600px) {
   .catalog-filter-stack {
+    position:sticky;
     top:58px;
     margin-inline:calc(var(--page-gutter, 1rem) * -1);
     padding-inline:var(--page-gutter, 1rem);

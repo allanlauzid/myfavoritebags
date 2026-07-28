@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 32 32"
+  fill="none"
+  role="img"
+  aria-labelledby="cartGoldTitle"
+>
+  <title id="cartGoldTitle">Carrinho de compras dourado com cesta em grade</title>
+  <desc>Ícone elegante e vazado, desenhado somente com linhas metálicas douradas.</desc>
+  <defs>
+    <linearGradient id="cartGoldMetal" x1="4" y1="4" x2="27" y2="27" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFBEA"/>
+      <stop offset=".12" stop-color="#FDE9B0"/>
+      <stop offset=".31" stop-color="#B98616"/>
+      <stop offset=".46" stop-color="#FFE99A"/>
+      <stop offset=".62" stop-color="#C9A227"/>
+      <stop offset=".79" stop-color="#F4D775"/>
+      <stop offset="1" stop-color="#7A5C1E"/>
+    </linearGradient>
+    <linearGradient id="cartGoldHighlight" x1="5" y1="4" x2="18" y2="20" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset=".35" stop-color="#FFF6D2"/>
+      <stop offset="1" stop-color="#F1C84D" stop-opacity=".15"/>
+    </linearGradient>
+    <filter id="cartGoldGlow" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation=".48"/>
+    </filter>
+
+    <!-- Chassi contínuo: cabo traseiro, haste inclinada e suporte sob a cesta. -->
+    <path id="cartHandle" d="M2.65 5.2H5.9c.82 0 1.52.56 1.71 1.36l2.72 11.72a2.9 2.9 0 0 0 2.83 2.24h11.2"/>
+
+    <!-- Cesta projetada para a frente; a haste do chassi funciona como lateral traseira. -->
+    <path id="cartBasket" d="M8.3 9.2h19.5l-2.05 8.62a2.15 2.15 0 0 1-2.09 1.65H10.6"/>
+    <path id="cartBase" d="M12.35 22.85H23.9"/>
+
+    <!-- Grade da cesta: linhas leves que acompanham suas laterais inclinadas. -->
+    <path id="cartGrid" d="
+      M9.16 12.62h17.82
+      M9.96 15.98h16.22
+      M12.98 9.42l.62 9.78
+      M18.34 9.42v9.9
+      M23.7 9.42l-.76 9.78
+    "/>
+
+    <!-- Reflexos curtos: dão brilho de joia sem engrossar o desenho. -->
+    <path id="cartSpecular" d="
+      M3.15 5.2h2.55
+      M9.02 9.2h7.75
+      M9.68 12.62h5.55
+      M10.48 15.98h4.42
+      M12.82 22.85h4.15
+    "/>
+
+    <circle id="cartWheelLeft" cx="13.35" cy="26.05" r="1.35"/>
+    <circle id="cartWheelRight" cx="23.25" cy="26.05" r="1.35"/>
+  </defs>
+
+  <!-- Halo muito discreto; permanece totalmente transparente fora dos traços. -->
+  <g
+    stroke="#EFC13F"
+    stroke-width="1.9"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    opacity=".28"
+    filter="url(#cartGoldGlow)"
+  >
+    <use href="#cartHandle"/>
+    <use href="#cartBasket"/>
+    <use href="#cartBase"/>
+    <use href="#cartWheelLeft"/>
+    <use href="#cartWheelRight"/>
+  </g>
+
+  <!-- Filete escuro sutil, inspirado no acabamento metálico da marca. -->
+  <g
+    stroke="#6B5220"
+    stroke-width="1.32"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <use href="#cartHandle"/>
+    <use href="#cartBasket"/>
+    <use href="#cartBase"/>
+    <use href="#cartWheelLeft"/>
+    <use href="#cartWheelRight"/>
+  </g>
+
+  <!-- Luz metálica principal: traço fino, vazado e sem qualquer fundo. -->
+  <g
+    stroke="url(#cartGoldMetal)"
+    stroke-width=".82"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <use href="#cartHandle"/>
+    <use href="#cartBasket"/>
+    <use href="#cartBase"/>
+    <use href="#cartWheelLeft"/>
+    <use href="#cartWheelRight"/>
+  </g>
+
+  <!-- A grade é ainda mais fina para manter a leitura elegante em tamanhos pequenos. -->
+  <use
+    href="#cartGrid"
+    stroke="#6B5220"
+    stroke-width=".88"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <use
+    href="#cartGrid"
+    stroke="url(#cartGoldMetal)"
+    stroke-width=".52"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <!-- Filetes branco-dourados simulam reflexos pontuais no metal polido. -->
+  <use
+    href="#cartSpecular"
+    stroke="url(#cartGoldHighlight)"
+    stroke-width=".25"
+    stroke-linecap="round"
+    opacity=".95"
+  />
+  <g stroke="url(#cartGoldHighlight)" stroke-linecap="round">
+    <path d="M26.65 4.05v2.35M25.48 5.23h2.34" stroke-width=".38"/>
+    <path d="M28.45 7.35v1.25M27.83 7.98h1.24" stroke-width=".27" opacity=".75"/>
+  </g>
+</svg>

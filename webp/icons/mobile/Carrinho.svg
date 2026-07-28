@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 1254 1254"
+  fill="none"
+  role="img"
+  aria-labelledby="mobileCartTitle"
+>
+  <title id="mobileCartTitle">Carrinho de compras</title>
+  <desc>Ícone linear de carrinho de compras em dourado metálico sobre fundo transparente.</desc>
+
+  <defs>
+    <!-- Faixas claras e escuras simulam metal polido sem sair do próprio traço. -->
+    <linearGradient id="mobileCartGold" x1="235" y1="285" x2="986" y2="1015" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF8DA"/>
+      <stop offset=".14" stop-color="#E8C660"/>
+      <stop offset=".31" stop-color="#9C7A34"/>
+      <stop offset=".47" stop-color="#F7DE86"/>
+      <stop offset=".64" stop-color="#B68A1F"/>
+      <stop offset=".81" stop-color="#EFD16A"/>
+      <stop offset="1" stop-color="#72551A"/>
+    </linearGradient>
+    <linearGradient id="mobileCartHighlight" x1="245" y1="290" x2="930" y2="970" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity=".95"/>
+      <stop offset=".22" stop-color="#FFF3BD" stop-opacity=".78"/>
+      <stop offset=".43" stop-color="#E7BC49" stop-opacity=".18"/>
+      <stop offset=".61" stop-color="#FFF0A0" stop-opacity=".72"/>
+      <stop offset=".82" stop-color="#F0CC62" stop-opacity=".22"/>
+      <stop offset="1" stop-color="#FFF8D6" stop-opacity=".5"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Mesmo enquadramento 1254 × 1254 dos demais ícones da navegação mobile. -->
+
+  <!-- Contorno escuro: define a borda do metal, sem halo ou sombra externa. -->
+  <g
+    stroke="#6B5220"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path
+      d="M242 302h112c31 0 58 21 65 52l102 442c8 36 40 62 77 62h334"
+      stroke-width="28"
+    />
+    <path
+      d="M443 435h565l-66 286c-9 40-45 69-86 69H520"
+      stroke-width="28"
+    />
+    <path
+      d="
+        M468 548h514
+        M493 664h462
+        M578 447l29 330
+        M727 447v330
+        M876 447l-30 330
+      "
+      stroke-width="22"
+    />
+    <path d="M590 910h310" stroke-width="28"/>
+    <circle cx="620" cy="982" r="45" stroke-width="28"/>
+    <circle cx="874" cy="982" r="45" stroke-width="28"/>
+  </g>
+
+  <!-- Corpo dourado metálico, integralmente contido no contorno acima. -->
+  <g
+    stroke="url(#mobileCartGold)"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M242 302h112c31 0 58 21 65 52l102 442c8 36 40 62 77 62h334" stroke-width="22"/>
+    <path d="M443 435h565l-66 286c-9 40-45 69-86 69H520" stroke-width="22"/>
+    <path
+      d="
+        M468 548h514
+        M493 664h462
+        M578 447l29 330
+        M727 447v330
+        M876 447l-30 330
+      "
+      stroke-width="16"
+    />
+    <path d="M590 910h310" stroke-width="22"/>
+    <circle cx="620" cy="982" r="45" stroke-width="22"/>
+    <circle cx="874" cy="982" r="45" stroke-width="22"/>
+  </g>
+
+  <!-- Reflexo central fino: não ultrapassa a largura das linhas principais. -->
+  <g
+    stroke="url(#mobileCartHighlight)"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M242 302h112c31 0 58 21 65 52l102 442c8 36 40 62 77 62h334" stroke-width="4"/>
+    <path d="M443 435h565l-66 286c-9 40-45 69-86 69H520" stroke-width="4"/>
+    <path
+      d="
+        M468 548h514
+        M493 664h462
+        M578 447l29 330
+        M727 447v330
+        M876 447l-30 330
+      "
+      stroke-width="3"
+    />
+    <path d="M590 910h310" stroke-width="4"/>
+    <circle cx="620" cy="982" r="45" stroke-width="4"/>
+    <circle cx="874" cy="982" r="45" stroke-width="4"/>
+  </g>
+</svg>

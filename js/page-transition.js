@@ -129,7 +129,10 @@
     const data = CURTAIN_DATA[file];
     const curEl = getCurtain();
     if (!data || !curEl) { window.location.href = href; return; }
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    // try/catch: com cookies/dados de site bloqueados o setItem lança
+    // SecurityError — sem a proteção, o clique no link morria aqui e a
+    // navegação nem acontecia. Sem storage, só se perde a animação.
+    try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (_) {}
     // Nenhuma logo aparece durante o fade-in pérola — só a tela funde.
     const logoEl = curEl.querySelector('.page-curtain-logo');
     if (logoEl) {

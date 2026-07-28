@@ -75,14 +75,57 @@ function productToRow(p) {
   };
 }
 
-// ── Gemini — gera uma descrição curta de bolsa a partir da FOTO real da
-// peça (mais nome/categoria/preço como contexto). `image` é obrigatória:
-// uma data URL (bolsa nova, ainda não publicada) ou a URL pública da foto já
-// salva (bolsa existente). O texto volta pra revisão do admin, nada é salvo.
-async function sbGenerateDescription(name, cat, price, image) {
-  if (!image) throw new Error('Escolha a foto da bolsa antes de gerar a descrição.');
-  const data = await sbAdminWrite(null, 'generate_description', { name, cat, price, image });
-  return data?.description || '';
+// ── Gemini — gera DUAS opções de descrição curta de bolsa, a partir da FOTO
+// real da peça OU de um prompt escrito pelo lojista (mais nome/categoria/
+// preço como contexto). Precisa de `image` OU `prompt` — nunca aleatório.
+// `image` pode ser uma data URL (bolsa nova, ainda não publicada) ou a URL
+// pública da foto já salva (bolsa existente). O texto volta pra revisão do
+// admin, nada é salvo. Devolve um array com até 2 descrições.
+async function sbGenerateDescription(name, cat, price, image, prompt) {
+  if (!image && !(prompt && prompt.trim())) throw new Error('Escolha a foto da bolsa ou escreva um prompt antes de gerar a descrição.');
+  const data = await sbAdminWrite(null, 'generate_description', { name, cat, price, image, prompt });
+  if (Array.isArray(data?.descriptions)) return data.descriptions;
+  return data?.description ? [data.description] : [];
+}
+
+// ── Gemini — gerador de nomes de bolsas ─────────────────────────────────────
+// mode: 'random' | 'photo' | 'description'; syllables: 2 | 3 | null.
+// Devolve { names:[{name, syllableCount}], attemptsUsed, needMoreDetail, needMoreDetailMessage }.
+// Nada é salvo aqui — o nome só entra no histórico (bag_names) quando a
+// bolsa é de fato salva (sbUpsertBag), via metadado `nameSource`.
+async function sbGenerateBagName({ mode, image, description, syllables } = {}) {
+  const data = await sbAdminWrite(null, 'generate_bag_name', { mode, image, description, syllables });
+  return data || { names: [] };
+}
+
+// ── Analytics do Match — tracking anônimo (acessos, fim de baralho, matches) ─
+// Gravação direta via REST (RLS permite INSERT público na tabela
+// match_events, sem permissão de leitura) — nunca deve travar a experiência
+// do visitante: qualquer falha (rede, bloqueio de terceiros etc.) é
+// silenciosamente ignorada. `keepalive` ajuda o evento a sair mesmo se a
+// pessoa navegar pra outra página logo em seguida (ex.: saiu do Match).
+async function sbTrackMatchEvent(eventType, extra) {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/match_events`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_PUBLISHABLE_KEY,
+        Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
+        'content-type': 'application/json',
+        Prefer: 'return=minimal',
+      },
+      body: JSON.stringify({ event_type: eventType, ...(extra || {}) }),
+      keepalive: true,
+    });
+  } catch (_e) {
+    // tracking nunca deve quebrar a experiência do usuário
+  }
+}
+
+// Painel admin — busca as métricas já agregadas (acessos, matches por
+// dia/semana/mês/ano, por usuário, por peça, etc.) via Edge Function.
+async function sbFetchMatchAnalytics() {
+  return sbAdminWrite(null, 'get_match_analytics', {});
 }
 
 async function sbFetchBags() {
@@ -104,15 +147,21 @@ async function sbFetchSettings() {
 
 // ── Escrita (admin) — sempre via Edge Function, nunca direto no banco ──────
 function getAdminPassword() {
-  // Reaproveita a senha já digitada no login do painel admin existente.
-  return sessionStorage.getItem('mfbAdminPassword') || '';
+  // Reaproveita a credencial guardada no login do painel (token de sessão
+  // devolvido pelo servidor, ou a senha digitada como fallback). try/catch
+  // porque o acesso ao sessionStorage pode lançar SecurityError quando o
+  // navegador bloqueia cookies/dados de site.
+  try { return sessionStorage.getItem('mfbAdminPassword') || ''; } catch (_) { return ''; }
 }
 
-async function sbAdminWrite(table, action, payload) {
+async function sbAdminWrite(table, action, payload, extra) {
   const res = await fetch(`${FN_URL}/admin-write`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ password: getAdminPassword(), table, action, payload }),
+    // `extra` são campos de nível superior (irmãos de payload), tipo
+    // nameSource — NUNCA vão dentro do payload, pra não virarem "coluna
+    // fantasma" na tabela caso a Edge Function não os conheça.
+    body: JSON.stringify({ password: getAdminPassword(), table, action, payload, ...(extra || {}) }),
   });
   const json = await res.json();
   if (!res.ok || json.error) throw new Error(json.error || `Falha ao gravar em ${table}`);
@@ -120,7 +169,15 @@ async function sbAdminWrite(table, action, payload) {
 }
 
 async function sbUpsertBag(product) {
-  return sbAdminWrite('bags', 'upsert', productToRow(product));
+  const row = productToRow(product);
+  // Origem do nome (só pro histórico bag_names, NÃO é coluna de bags): vai
+  // como campo SEPARADO, irmão do payload — não dentro da linha. Antes ia
+  // como row._name_source e, se a Edge Function publicada fosse a versão
+  // antiga (que não remove esse campo antes do upsert), o banco rejeitava
+  // com "Could not find the '_name_source' column of 'bags'". Assim a linha
+  // enviada é sempre limpa: funciona com a função antiga e com a nova.
+  const nameSource = product.nameSource === 'gemini' ? 'gemini' : 'manual';
+  return sbAdminWrite('bags', 'upsert', row, { nameSource });
 }
 async function sbDeleteBag(id) {
   return sbAdminWrite('bags', 'delete', { id });
@@ -305,6 +362,11 @@ async function convertToWebp(source, quality = 0.9) {
 
   const img = await new Promise((resolve, reject) => {
     const im = new Image();
+    // Necessário quando `source` é uma URL remota (ex: foto já hospedada no
+    // Storage, escolhida na galeria) — sem isso, o canvas fica "tainted" e
+    // toDataURL() explode com "Tainted canvases may not be exported.". Em
+    // data URLs (File/Blob já lidos acima) essa flag não faz diferença.
+    im.crossOrigin = 'anonymous';
     im.onload = () => resolve(im);
     im.onerror = reject;
     im.src = dataUrl;
@@ -315,5 +377,23 @@ async function convertToWebp(source, quality = 0.9) {
   canvas.height = img.naturalHeight;
   const ctx = canvas.getContext('2d');
   ctx.drawImage(img, 0, 0);
-  return canvas.toDataURL('image/webp', quality);
+  try {
+    return canvas.toDataURL('image/webp', quality);
+  } catch (err) {
+    // Fallback: se mesmo assim o canvas ficar tainted (ex: bucket sem CORS
+    // liberado pra esse domínio), refaz sem canvas — busca a imagem via
+    // fetch (sem restrição de canvas) e devolve como data URL no formato
+    // original. Não fica em WEBP nesse caso, mas o cadastro não trava.
+    if (err && err.name === 'SecurityError' && typeof dataUrl === 'string' && /^https?:\/\//i.test(dataUrl)) {
+      const resp = await fetch(dataUrl);
+      const blob = await resp.blob();
+      return await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    }
+    throw err;
+  }
 }

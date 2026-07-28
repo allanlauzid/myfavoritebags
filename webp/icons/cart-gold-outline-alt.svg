@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 36 32"
+  fill="none"
+  role="img"
+  aria-labelledby="cartGoldAltTitle"
+>
+  <title id="cartGoldAltTitle">Carrinho de compras dourado — alternativa alongada</title>
+  <desc>Ícone elegante, vazado e brilhante, desenhado somente com linhas metálicas douradas.</desc>
+
+  <defs>
+    <linearGradient id="cartAltGoldMetal" x1="3" y1="4" x2="31" y2="27" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFBEA"/>
+      <stop offset=".12" stop-color="#FDE9B0"/>
+      <stop offset=".31" stop-color="#B98616"/>
+      <stop offset=".46" stop-color="#FFE99A"/>
+      <stop offset=".62" stop-color="#C9A227"/>
+      <stop offset=".79" stop-color="#F4D775"/>
+      <stop offset="1" stop-color="#7A5C1E"/>
+    </linearGradient>
+    <linearGradient id="cartAltHighlight" x1="4" y1="4" x2="21" y2="20" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset=".36" stop-color="#FFF6D2"/>
+      <stop offset="1" stop-color="#F1C84D" stop-opacity=".12"/>
+    </linearGradient>
+    <filter id="cartAltGlow" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation=".45"/>
+    </filter>
+
+    <!-- Perfil mais longo: cabo amplo, haste traseira e chassi contínuo. -->
+    <path id="cartAltFrame" d="M2.7 5.25h3.8c1.03 0 1.92.71 2.15 1.72l2.68 11.72a2.55 2.55 0 0 0 2.49 1.98h13.86"/>
+
+    <!-- Cesta baixa e projetada para a frente, típica de carrinho de compras. -->
+    <path id="cartAltBasket" d="M9.15 9.05h21.72l-2.72 8.7a2.3 2.3 0 0 1-2.2 1.62H11.48"/>
+    <path id="cartAltBase" d="M13.2 22.85h13.72l1.25-1.3"/>
+
+    <!-- Grade em perspectiva. -->
+    <path id="cartAltGrid" d="
+      M10.05 12.45h19.75
+      M10.82 15.72h17.96
+      M13.85 9.3l1.12 9.8
+      M20.08 9.3l.28 9.8
+      M26.28 9.3l-.82 9.8
+    "/>
+
+    <path id="cartAltSpecular" d="
+      M3.25 5.25h3.02
+      M9.92 9.05h8.3
+      M10.58 12.45h5.9
+      M11.38 15.72h4.5
+      M13.72 22.85h4.55
+    "/>
+
+    <circle id="cartAltWheelRear" cx="14.3" cy="26.15" r="1.35"/>
+    <circle id="cartAltWheelFront" cx="26.25" cy="26.15" r="1.35"/>
+  </defs>
+
+  <!-- Brilho ambiente discreto. -->
+  <g
+    stroke="#EFC13F"
+    stroke-width="1.82"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    opacity=".27"
+    filter="url(#cartAltGlow)"
+  >
+    <use href="#cartAltFrame"/>
+    <use href="#cartAltBasket"/>
+    <use href="#cartAltBase"/>
+    <use href="#cartAltWheelRear"/>
+    <use href="#cartAltWheelFront"/>
+  </g>
+
+  <!-- Filete escuro para definição metálica. -->
+  <g
+    stroke="#6B5220"
+    stroke-width="1.28"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <use href="#cartAltFrame"/>
+    <use href="#cartAltBasket"/>
+    <use href="#cartAltBase"/>
+    <use href="#cartAltWheelRear"/>
+    <use href="#cartAltWheelFront"/>
+  </g>
+
+  <!-- Metal dourado principal. -->
+  <g
+    stroke="url(#cartAltGoldMetal)"
+    stroke-width=".78"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <use href="#cartAltFrame"/>
+    <use href="#cartAltBasket"/>
+    <use href="#cartAltBase"/>
+    <use href="#cartAltWheelRear"/>
+    <use href="#cartAltWheelFront"/>
+  </g>
+
+  <!-- Grade mais delicada que a estrutura externa. -->
+  <use
+    href="#cartAltGrid"
+    stroke="#6B5220"
+    stroke-width=".84"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <use
+    href="#cartAltGrid"
+    stroke="url(#cartAltGoldMetal)"
+    stroke-width=".48"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <!-- Reflexos de metal polido. -->
+  <use
+    href="#cartAltSpecular"
+    stroke="url(#cartAltHighlight)"
+    stroke-width=".24"
+    stroke-linecap="round"
+    opacity=".96"
+  />
+  <g stroke="url(#cartAltHighlight)" stroke-linecap="round">
+    <path d="M30.35 4v2.45M29.13 5.23h2.44" stroke-width=".37"/>
+    <path d="M32.27 7.15v1.2M31.67 7.75h1.2" stroke-width=".26" opacity=".72"/>
+  </g>
+</svg>

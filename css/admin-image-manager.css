@@ -398,11 +398,12 @@ html.reduce-motion .pim-btn { transition-duration:.01ms !important; }
   border:1px solid var(--line);
   border-radius:14px;
   background:rgba(255,255,255,.58);
+  overflow-x:hidden;
 }
 .crud-create h3 { margin:0 0 4px; color:var(--text); font:600 24px/1.15 'Cormorant Garamond',serif; }
 .crud-create p { margin:0; color:var(--text-muted); font-size:14px; line-height:1.55; }
-.crud-create-grid { display:grid; grid-template-columns:140px minmax(180px,1fr) 150px 170px; gap:12px; align-items:end; }
-.crud-create-grid label:not(.crud-upload), .crud-field { display:grid; gap:6px; color:var(--text-muted); font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+.crud-create-grid { display:grid; grid-template-columns:140px minmax(180px,1fr) 150px 170px; gap:12px; align-items:end; overflow-x:hidden; }
+.crud-create-grid label:not(.crud-upload), .crud-field { display:grid; gap:6px; color:var(--text-muted); font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; min-width:0; }
 .crud-upload { position:relative; display:grid; place-items:center; min-height:86px; overflow:hidden; border:1px dashed var(--rose-dark); border-radius:10px; color:var(--rose-dark); font-size:13px; font-weight:700; cursor:pointer; }
 .crud-upload input { position:absolute; opacity:0; pointer-events:none; }
 .crud-upload img { display:none; position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
@@ -410,32 +411,78 @@ html.reduce-motion .pim-btn { transition-duration:.01ms !important; }
 .crud-image-tools { display:grid; gap:7px; }
 .crud-remove-bg { min-height:36px; padding:7px 9px; border:1px solid rgba(101,60,43,.28); border-radius:8px; background:rgba(182,139,115,.12); color:#653C2B; font:600 12px/1.2 'Jost',sans-serif; letter-spacing:.05em; text-transform:uppercase; cursor:pointer; }
 .crud-remove-bg:disabled { opacity:.48; cursor:not-allowed; }
+/* Botão unificado "Gerar nome e descrição" (ao lado da imagem). */
+.crud-gen-btn { min-height:38px; padding:8px 10px; border:none; border-radius:8px; background:var(--rose-dark); color:#fff; font:600 12px/1.2 'Jost',sans-serif; letter-spacing:.04em; cursor:pointer; transition:opacity .18s; }
+.crud-gen-btn:hover { opacity:.9; }
+.crud-gen-btn-sm { background:var(--rose-dark) !important; color:#fff !important; border-color:var(--rose-dark) !important; }
+.crud-gen-btn-sm:hover { opacity:.9; }
 .crud-message { min-height:18px; color:var(--rose-dark) !important; }
 .crud-add { justify-self:start; margin-top:0 !important; }
-.crud-list { display:grid; gap:10px; }
-.crud-row { display:grid; grid-template-columns:92px minmax(180px,1fr) 150px auto; gap:14px; align-items:center; padding:12px; border:1px solid var(--line); border-radius:12px; background:var(--bg); }
+/* ── Lista de cadastro: grade de CARDS clicáveis (cada bolsa abre um modal
+   de edição). Antes cada item era uma linha (.crud-row) que despejava todos
+   os campos e, no painel estreito, colapsava em coluna única — o visual
+   "bagunçado". Agora é um card compacto (foto + nome + preço + status). ── */
+.crud-list { display:grid; grid-template-columns:repeat(auto-fill, minmax(148px, 1fr)); gap:12px; }
+.crud-card { display:flex; flex-direction:column; text-align:left; padding:0; border:1px solid var(--line); border-radius:12px; background:var(--bg); cursor:pointer; overflow:hidden; font-family:'Jost',sans-serif; transition:border-color .2s, box-shadow .2s, transform .12s; }
+.crud-card:hover { border-color:var(--rose-dark); box-shadow:0 6px 18px rgba(101,60,43,.10); transform:translateY(-2px); }
+.crud-card-thumb { aspect-ratio:1/1; display:grid; place-items:center; background:var(--bg2); color:var(--text-muted); font-size:11px; overflow:hidden; }
+.crud-card-thumb img { width:100%; height:100%; object-fit:cover; }
+.crud-card-body { padding:10px 12px 12px; display:flex; flex-direction:column; gap:3px; min-width:0; }
+.crud-card-name { font-size:13.5px; font-weight:600; color:var(--text); line-height:1.25; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.crud-card-price { font-size:12.5px; color:var(--rose-dark); font-weight:600; }
+.crud-card-status { align-self:flex-start; margin-top:5px; font-size:9.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:2px 8px; border-radius:20px; background:var(--bg2); color:var(--text-muted); }
+.crud-card-status--available   { background:rgba(60,140,80,.14); color:#3c7a4e; }
+.crud-card-status--sold_out    { background:rgba(180,50,50,.12); color:#b83232; }
+.crud-card-status--coming_soon { background:rgba(182,139,115,.20); color:var(--rose-dark); }
+.crud-card-status--hidden      { background:var(--bg2); color:var(--text-muted); }
+
 .crud-thumb { display:grid; place-items:center; width:92px; height:92px; overflow:hidden; border-radius:9px; background:var(--bg2); color:var(--text-muted); font-size:11px; }
 .crud-thumb img { width:100%; height:100%; object-fit:cover; }
 .crud-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:7px; }
 .crud-btn { min-height:38px; padding:8px 11px; border:1px solid var(--line); border-radius:8px; background:transparent; color:var(--text); font:600 11px/1.2 'Jost',sans-serif; cursor:pointer; }
 .crud-btn:hover { border-color:var(--rose-dark); color:var(--rose-dark); }
 .crud-btn.primary { border-color:var(--rose-dark); background:var(--rose-dark); color:#fff; }
+.crud-btn.primary:hover { color:#fff; opacity:.92; }
 .crud-btn.danger { color:#a42d2d; }
-.crud-empty { padding:28px; border:1px dashed var(--line); border-radius:12px; color:var(--text-muted); text-align:center; }
+.crud-btn.danger:hover { border-color:#a42d2d; color:#a42d2d; }
+.crud-empty { padding:28px; border:1px dashed var(--line); border-radius:12px; color:var(--text-muted); text-align:center; grid-column:1 / -1; }
+
+/* Prefixo "R$" dentro do campo de preço. No index.html isto existe inline;
+   aqui (CSS compartilhado) garante o mesmo no looks.html, que não tinha. */
+.price-input-wrap { position:relative; }
+.price-input-wrap .price-prefix {
+  position:absolute; left:14px; top:50%; transform:translateY(-50%);
+  color:var(--text-muted); font-size:13px; pointer-events:none; z-index:1;
+}
+.price-input-wrap .fi { padding-left:36px; }
+
+/* ── Modal de edição do cadastro (aberto ao clicar num card) ── */
+.crud-modal-ov { position:fixed; inset:0; z-index:9450; background:rgba(42,31,24,.55); display:flex; align-items:center; justify-content:center; padding:20px; opacity:0; transition:opacity .2s ease; }
+.crud-modal-ov.visible { opacity:1; }
+.crud-modal { background:var(--bg); border-radius:16px; width:min(620px, 96vw); max-height:90vh; display:flex; flex-direction:column; overflow:hidden; font-family:'Jost',sans-serif; transform:translateY(12px) scale(.98); transition:transform .22s ease; }
+.crud-modal-ov.visible .crud-modal { transform:none; }
+.crud-modal-hd { display:flex; align-items:center; justify-content:space-between; padding:18px 22px; border-bottom:1px solid var(--line); }
+.crud-modal-title { font:600 21px/1 'Cormorant Garamond',serif; letter-spacing:.06em; color:var(--text); }
+.crud-modal-x { background:none; border:none; font-size:17px; color:var(--text-muted); cursor:pointer; line-height:1; padding:6px; border-radius:6px; }
+.crud-modal-x:hover { color:var(--rose-dark); background:var(--bg2); }
+.crud-modal-bd { padding:22px; overflow-y:auto; display:grid; grid-template-columns:180px 1fr; gap:22px; }
+.crud-modal-imgcol { display:flex; flex-direction:column; gap:8px; }
+.crud-modal-thumb { width:100%; height:180px; }
+.crud-modal-fields { display:flex; flex-direction:column; gap:16px; min-width:0; }
+.crud-modal-ft { display:flex; align-items:center; gap:8px; padding:16px 22px; border-top:1px solid var(--line); }
+.crud-modal-ft .crud-spacer { flex:1; }
 
 @media(max-width:900px) {
   .crud-create-grid { grid-template-columns:120px 1fr 140px; }
   .crud-create-grid label:last-child { grid-column:2 / -1; }
-  .crud-row { grid-template-columns:80px 1fr 130px; }
-  .crud-thumb { width:80px; height:80px; }
-  .crud-actions { grid-column:2 / -1; justify-content:flex-start; }
 }
 
 @media(max-width:620px) {
   .crud-create { padding:16px; }
-  .crud-create-grid, .crud-row { grid-template-columns:1fr; }
-  .crud-create-grid label:last-child, .crud-actions { grid-column:auto; }
-  .crud-upload, .crud-thumb { width:100%; height:150px; }
-  .crud-actions { display:grid; grid-template-columns:1fr; }
-  .crud-btn { width:100%; }
+  .crud-create-grid { grid-template-columns:1fr; }
+  .crud-create-grid label:last-child { grid-column:auto; }
+  .crud-upload { width:100%; height:150px; }
+  .crud-list { grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); }
+  .crud-modal-bd { grid-template-columns:1fr; }
+  .crud-modal-thumb { height:200px; }
 }

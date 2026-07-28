@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="pt-BR" class="no-js">
 <head>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4589608543845725"
+     crossorigin="anonymous"></script>
 <script>document.documentElement.classList.replace('no-js','js');</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -11,7 +13,11 @@
   // ?preview=1 permite que o admin edite/visualize a página mesmo bloqueada, sem publicar.
   const _isPreview = new URLSearchParams(location.search).get('preview') === '1';
   // Padrão: visível (só bloqueia se o admin marcar explicitamente como "locked")
-  if (!_isPreview && localStorage.getItem('mfb_match_state') === 'locked') {
+  // try/catch: localStorage pode lançar SecurityError com cookies/dados de
+  // site bloqueados — sem proteção, este script (e o resto da página) morria.
+  var _matchState = null;
+  try { _matchState = localStorage.getItem('mfb_match_state'); } catch (_) {}
+  if (!_isPreview && _matchState === 'locked') {
     location.replace('index.html');
   }
 </script>
@@ -37,9 +43,26 @@
 }
 *,*::before,*::after{ margin:0; padding:0; box-sizing:border-box; }
 html,body{ height:100%; }
+
+/* ─── SCROLLBAR CUSTOMIZADA (global) ────────────────────────────────────────
+   Sem trilho (track sempre transparente) e a barrinha some quando parada,
+   só aparecendo ao passar o mouse sobre a área com rolagem. */
+* {
+  scrollbar-width:thin;
+  scrollbar-color:transparent transparent;
+}
+*:hover {
+  scrollbar-color:var(--rose-dark) transparent;
+}
+::-webkit-scrollbar { width:8px; height:8px; background:transparent; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:transparent; border-radius:10px; }
+*:hover::-webkit-scrollbar-thumb { background:var(--rose-dark); }
+::-webkit-scrollbar-thumb:hover { background:var(--rose-deep); }
+
 body{
   font-family:'Jost',sans-serif;
-  background:#EDE1D3; /* área neutra clara — "areia aconchegante" */
+  background:var(--rose-deep); /* área neutra marrom (tom da paleta) atrás do frame no desktop */
   color:var(--text);
   overflow:hidden;
   display:flex; align-items:center; justify-content:center;
@@ -350,11 +373,14 @@ a.brand-bags-fill-light:hover {
   gap:14px; text-align:center; padding:0 30px; color:var(--text-muted);
 }
 .m-empty-t { font-family:'Cormorant Garamond',serif; font-size:22px; color:var(--text); }
+.m-empty-actions{ margin-top:6px; display:flex; flex-direction:column; gap:.65rem; width:100%; max-width:280px; }
 .m-empty-btn{
-  margin-top:6px; border:1.5px solid var(--rose); background:transparent; color:var(--text);
+  border:1.5px solid var(--rose); background:transparent; color:var(--text);
   border-radius:10px; padding:.8rem 1.6rem; font-family:'Jost',sans-serif; font-size:.85rem; line-height:1.4;
   letter-spacing:.1em; text-transform:uppercase; cursor:pointer; min-height:44px;
+  text-decoration:none; display:inline-flex; align-items:center; justify-content:center; gap:.5rem;
 }
+.m-empty-btn-wa{ background:#25D366; border-color:#25D366; color:#0b3d20; font-weight:600; }
 
 /* ─── ACTION BUTTONS — estilo Tinder, skin My Favorite ──────────────────── */
 .m-actions {
@@ -851,7 +877,7 @@ button:focus-visible {
       <div class="m-ov-list" id="mOvList"></div>
       <textarea class="m-ov-msg" id="mOvMsg" placeholder="Quer adicionar algo à mensagem? (opcional)"></textarea>
       <a class="m-ov-btn m-ov-wa" id="mOvWa" href="#" target="_blank">Falar no WhatsApp</a>
-      <button class="m-ov-btn m-ov-continue" onclick="closeMatchOverlay()">Continuar vendo catálogo</button>
+      <button class="m-ov-btn m-ov-continue" id="mOvContinue" onclick="closeMatchOverlay()">Continuar vendo catálogo</button>
     </div>
   </div>
 </div>
@@ -916,6 +942,35 @@ const BRAND_LABEL = { bags:'My Favorite Bags', looks:'My Favorite Looks' };
 const STATUS_LABEL_PT = { available:'Disponível', sold_out:'Esgotado', coming_soon:'Em Breve' };
 const WA_NUMBER = '5581995966968';
 
+// ─── ANALYTICS (Match Analytics, painel admin) ──────────────────────────────
+// Tracking 100% anônimo — nenhum dado pessoal, só IDs gerados no navegador.
+// `visitor_id` persiste no localStorage (mesma pessoa entre visitas);
+// `session_id` é novo a cada carregamento da página. Usados pra alimentar o
+// painel "Match Analytics" do admin (acessos, conclusões de baralho, matches
+// por dia/semana/mês/ano, por usuário e por peça).
+function _mfbUuid() {
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+function _mfbMatchVisitorId() {
+  try {
+    let id = localStorage.getItem('mfb_match_visitor_id');
+    if (!id) { id = _mfbUuid(); localStorage.setItem('mfb_match_visitor_id', id); }
+    return id;
+  } catch (_) { return _mfbUuid(); }
+}
+const MATCH_VISITOR_ID = _mfbMatchVisitorId();
+const MATCH_SESSION_ID = _mfbUuid();
+function trackMatchEvent(eventType, extra) {
+  if (typeof sbTrackMatchEvent !== 'function') return;
+  sbTrackMatchEvent(eventType, { visitor_id: MATCH_VISITOR_ID, session_id: MATCH_SESSION_ID, ...(extra || {}) });
+}
+// Uma visita = um carregamento da página (não exige ter começado a "jogar").
+trackMatchEvent('page_view');
+
 // Ícones SVG genéricos (fallback para itens sem foto — ex.: Looks)
 function placeholderSVG(cat) {
   const c = '#B68B73';
@@ -929,13 +984,21 @@ function placeholderSVG(cat) {
 }
 
 // ─── STATE ─────────────────────────────────────────────────────────────────
-let filter = localStorage.getItem('mfb_match_default_filter') || 'all';
+let filter = (function(){ try { return localStorage.getItem('mfb_match_default_filter'); } catch (_) { return null; } })() || 'all';
 let occasion = 'all';
 let queue = [];
 let likes = [];
 let history = []; // pilha de decisões para permitir "desfazer"
 let started = false;
 let infoOpen = false;
+
+// Antes de mostrar a tela final (fim do baralho), o app reembaralha e
+// mostra o catálogo inteiro de novo automaticamente, por até 2 vezes (2
+// embaralhos diferentes), sem pedir nada ao usuário — só depois disso é
+// que a tela final aparece de fato.
+const AUTO_RESHUFFLE_PASSES = 2;
+let autoPassesRemaining = 0;
+let lastSwipedItem = null; // último card decidido — usado pra evitar repetir
 
 function filteredItems() {
   let list = ALL_ITEMS;
@@ -970,6 +1033,18 @@ function shuffle(arr) {
   return arr;
 }
 
+// Embaralha evitando que o primeiro item do resultado seja o mesmo
+// `avoidItem` (normalmente o último card visto no embaralho anterior) —
+// assim a "costura" entre um embaralho automático e o próximo nunca repete
+// a mesma peça em sequência.
+function shuffleAvoidingFirst(list, avoidItem) {
+  const shuffled = shuffle(list.slice());
+  if (avoidItem && shuffled.length > 1 && shuffled[0].id === avoidItem.id) {
+    [shuffled[0], shuffled[1]] = [shuffled[1], shuffled[0]];
+  }
+  return shuffled;
+}
+
 function updateUndoBtn() {
   const btn = document.getElementById('btnUndo');
   if (btn) btn.disabled = history.length === 0;
@@ -988,6 +1063,8 @@ function startSwiping() {
   if (!list.length) list = ALL_ITEMS.slice(); // fallback: evita ficar vazio se combinação não bate com nada
   queue = shuffle(list.slice());
   history = [];
+  autoPassesRemaining = AUTO_RESHUFFLE_PASSES;
+  lastSwipedItem = null;
   started = true;
   updateUndoBtn();
   // Monta o baralho ATRÁS da tela de configuração ANTES de começar a "remover"
@@ -1192,16 +1269,49 @@ function cardHTML(it, cls) {
     </div>`;
 }
 
+// Link do WhatsApp mostrado ao final do baralho — leva em conta se a pessoa
+// já curtiu alguma peça (pra personalizar a mensagem) ou não.
+function emptyStateWaLink() {
+  const msg = likes.length
+    ? `Olá! Vi todo o catálogo no My Favorite Match e curti ${likes.length} peça${likes.length !== 1 ? 's' : ''}. Queria saber mais!`
+    : 'Olá! Vi todo o catálogo no My Favorite Match e queria saber mais sobre as peças.';
+  return `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`;
+}
+
 function render() {
   const stage = document.getElementById('mStage');
   if (!queue.length) {
+    // Antes de encerrar de vez, refaz o baralho embaralhado automaticamente
+    // (até 2 vezes, embaralhos diferentes a cada passagem), sem pedir nada
+    // ao usuário — a "costura" evita repetir o último card visto como
+    // primeiro do próximo embaralho.
+    if (autoPassesRemaining > 0) {
+      autoPassesRemaining--;
+      let list = filteredItems();
+      if (!list.length) list = ALL_ITEMS.slice();
+      queue = shuffleAvoidingFirst(list, lastSwipedItem);
+      render();
+      return;
+    }
+    // Fim de verdade: registra que essa pessoa chegou até o último card
+    // (métrica "baralhos concluídos" / "pessoas que viram tudo" no admin).
+    trackMatchEvent('session_complete');
+    // Se rolou algum match na sessão, mostra o resumo (mesma tela de "Deu
+    // match!", com o título trocado e o botão de continuar virando
+    // "Embaralhar e tentar de novo"). Sem nenhum match, mostra a tela de
+    // "viu tudo" com o convite pro WhatsApp.
+    if (likes.length > 0) {
+      openMatchOverlay({ final: true });
+      return;
+    }
     stage.innerHTML = `<div class="m-empty">
       <div class="m-empty-t">Você viu tudo por aqui ✨</div>
-      <p>Reembaralhamos as peças pra você continuar curtindo.</p>
-      <button class="m-empty-btn" onclick="reshuffleLoop()">Ver de novo</button>
+      <div class="m-empty-actions">
+        <a class="m-empty-btn m-empty-btn-wa" href="${emptyStateWaLink()}" target="_blank" rel="noopener">Falar no WhatsApp</a>
+        <button class="m-empty-btn" onclick="restartLoop()">Reembaralhar e ver de novo</button>
+      </div>
     </div>`;
     clearTimeout(window._loopTimer);
-    window._loopTimer = setTimeout(() => { if (!queue.length) reshuffleLoop(); }, 4000);
     return;
   }
   const visible = queue.slice(0, 3);
@@ -1213,9 +1323,19 @@ function render() {
   if (topCard) attachDrag(topCard);
 }
 
-// ─── LOOP INFINITO ───────────────────────────────────────────────────────────
-function reshuffleLoop() {
+// ─── REINICIAR (botão "Reembaralhar e ver de novo" / "Embaralhar e tentar
+// de novo") ───────────────────────────────────────────────────────────────
+// Reembaralha o catálogo do zero, zera os matches da sessão e volta a
+// mostrar o mesmo ciclo automático (baralho + até 2 reembaralhos antes da
+// tela final).
+function restartLoop() {
   clearTimeout(window._loopTimer);
+  closeMatchOverlay();
+  likes = [];
+  history = [];
+  updateUndoBtn();
+  lastSwipedItem = null;
+  autoPassesRemaining = AUTO_RESHUFFLE_PASSES;
   let list = filteredItems();
   if (!list.length) list = ALL_ITEMS.slice();
   queue = shuffle(list.slice());
@@ -1251,12 +1371,20 @@ function decide(action) {
     queue.shift();
     history.push({ action, item: it });
     updateUndoBtn();
+    lastSwipedItem = it;
     if (isLike) {
       likes.push({ ...it, superLiked: action === 'super' });
-      render();
+      trackMatchEvent('match', { item_id: String(it.id), item_name: it.name, item_brand: it.brand });
+    }
+
+    // Só é "o fim de verdade" se a fila zerou e não sobra nenhum
+    // reembaralhamento automático — nesse caso, quem decide qual overlay
+    // final mostrar é o próprio render() (evita abrir o popup normal de
+    // "Deu match!" por cima do resumo final).
+    const reachedTrueEnd = !queue.length && autoPassesRemaining === 0;
+    render();
+    if (isLike && !(reachedTrueEnd && likes.length)) {
       openMatchOverlay();
-    } else {
-      render();
     }
   }, 260);
 }
@@ -1389,7 +1517,15 @@ function buildWaMessage() {
   return parts.join('');
 }
 
-function openMatchOverlay() {
+// `opts.final`: true = tela de encerramento do baralho (todos os
+// reembaralhos automáticos já foram exibidos). Mesmo overlay/conteúdo do
+// "Deu match!" normal, só muda o título e o botão de continuar.
+function openMatchOverlay(opts) {
+  const isFinal = !!(opts && opts.final);
+  const titleEl = document.getElementById('mOvTitle');
+  if (titleEl) titleEl.textContent = isFinal
+    ? `Você teve ${likes.length} match${likes.length !== 1 ? 'es' : ''}`
+    : 'Deu match!';
   document.getElementById('mOvSub').innerHTML = `Você já curtiu <b id="mOvCount">${likes.length}</b> peça${likes.length !== 1 ? 's' : ''}.`;
   document.getElementById('mOvList').innerHTML = likes.map(l => `
     <div class="m-ov-item">
@@ -1405,6 +1541,16 @@ function openMatchOverlay() {
   };
   updateWaLink();
   if (msgBox) msgBox.oninput = updateWaLink;
+  const continueBtn = document.getElementById('mOvContinue');
+  if (continueBtn) {
+    if (isFinal) {
+      continueBtn.textContent = 'Embaralhar e tentar de novo';
+      continueBtn.onclick = () => restartLoop();
+    } else {
+      continueBtn.textContent = 'Continuar vendo catálogo';
+      continueBtn.onclick = () => closeMatchOverlay();
+    }
+  }
   document.getElementById('mOv').classList.add('open');
   vibrate([20, 40, 20, 40, 30]);
   playMatchSound();
@@ -1457,6 +1603,7 @@ document.addEventListener('keydown', e => {
 </script>
 
 <script src="js/cursor.js"></script>
+<script src="js/keyboard.js"></script>
 <script src="js/page-transition.js"></script>
 
 </body>

@@ -7,6 +7,26 @@ a, button, [onclick] {
   -webkit-tap-highlight-color:transparent;
 }
 
+/* ── Acessibilidade por teclado (compartilhado nas 3 páginas) ──────────────
+   Contorno de foco visível para QUALQUER elemento interativo navegado por
+   Tab — inclui divs/cards que só tinham onclick (agora focáveis via
+   js/keyboard.js). Cor fixa com fallback porque match.html não define as
+   mesmas variáveis de cor do catálogo. :focus-visible só aparece na
+   navegação por teclado, não atrapalha o clique com mouse. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+[onclick]:focus-visible,
+[tabindex]:focus-visible,
+[role="button"]:focus-visible {
+  outline:2px solid #915E48;
+  outline-offset:2px;
+  border-radius:4px;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    CABEÇALHO (NAV) — layout compartilhado entre index.html e looks.html
    Estrutura, tamanhos e espaçamentos são idênticos nas duas páginas.

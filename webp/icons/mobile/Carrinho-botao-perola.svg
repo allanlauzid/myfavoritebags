@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 1200 900"
+  role="img"
+  aria-labelledby="pearlCartButtonTitle"
+>
+  <title id="pearlCartButtonTitle">Botão pérola 4 por 3 com carrinho dourado</title>
+  <desc>Botão elevado em proporção 4:3, com fundo predominantemente perolado, discreto blush e carrinho dourado metálico.</desc>
+
+  <defs>
+    <!-- Pérola clara e champagne, com rosa apenas na profundidade. -->
+    <radialGradient id="pearlBase" cx="30%" cy="17%" r="94%">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset=".2" stop-color="#FFFBFC"/>
+      <stop offset=".44" stop-color="#FCEEF2"/>
+      <stop offset=".65" stop-color="#F5DDE5"/>
+      <stop offset=".82" stop-color="#E9C5D1"/>
+      <stop offset="1" stop-color="#C993A6"/>
+    </radialGradient>
+    <linearGradient id="pearlSheen" x1="145" y1="90" x2="1045" y2="820" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity=".92"/>
+      <stop offset=".22" stop-color="#FBE8EE" stop-opacity=".2"/>
+      <stop offset=".46" stop-color="#FFFDF3" stop-opacity=".82"/>
+      <stop offset=".67" stop-color="#F2D6DF" stop-opacity=".2"/>
+      <stop offset=".84" stop-color="#FFF6E8" stop-opacity=".6"/>
+      <stop offset="1" stop-color="#EABFCC" stop-opacity=".32"/>
+    </linearGradient>
+
+    <!-- Veios majoritariamente pérola, marfim e champagne. -->
+    <linearGradient id="marbleIvory" x1="50" y1="150" x2="1150" y2="680" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity=".2"/>
+      <stop offset=".34" stop-color="#E7CBD3" stop-opacity=".26"/>
+      <stop offset=".62" stop-color="#FFF9EE" stop-opacity=".58"/>
+      <stop offset="1" stop-color="#DBB6C2" stop-opacity=".2"/>
+    </linearGradient>
+    <linearGradient id="marbleChampagne" x1="60" y1="800" x2="1140" y2="120" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#D5C197" stop-opacity=".2"/>
+      <stop offset=".36" stop-color="#FFF1C9" stop-opacity=".5"/>
+      <stop offset=".7" stop-color="#C8B58F" stop-opacity=".16"/>
+      <stop offset="1" stop-color="#FFF7DF" stop-opacity=".45"/>
+    </linearGradient>
+    <linearGradient id="marbleBlush" x1="100" y1="200" x2="1100" y2="740" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F3DCE2" stop-opacity=".08"/>
+      <stop offset=".48" stop-color="#C99EAA" stop-opacity=".2"/>
+      <stop offset="1" stop-color="#F5DDE4" stop-opacity=".12"/>
+    </linearGradient>
+    <linearGradient id="pearlIridescence" x1="100" y1="90" x2="1080" y2="825" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#DDF7F2" stop-opacity=".16"/>
+      <stop offset=".2" stop-color="#FFF9E5" stop-opacity=".12"/>
+      <stop offset=".4" stop-color="#F5D9EB" stop-opacity=".2"/>
+      <stop offset=".58" stop-color="#E2E5FF" stop-opacity=".13"/>
+      <stop offset=".76" stop-color="#FFF0C8" stop-opacity=".18"/>
+      <stop offset="1" stop-color="#F7D7E2" stop-opacity=".2"/>
+    </linearGradient>
+    <linearGradient id="marbleVein" x1="80" y1="165" x2="1120" y2="735" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity=".32"/>
+      <stop offset=".28" stop-color="#C58D9F" stop-opacity=".3"/>
+      <stop offset=".5" stop-color="#FFF7E6" stop-opacity=".5"/>
+      <stop offset=".72" stop-color="#B87B90" stop-opacity=".24"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity=".3"/>
+    </linearGradient>
+
+    <!-- Dourado do aro e do carrinho. -->
+    <linearGradient id="buttonGold" x1="75" y1="55" x2="1125" y2="845" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset=".07" stop-color="#FFF2A8"/>
+      <stop offset=".17" stop-color="#C28A13"/>
+      <stop offset=".27" stop-color="#5B3806"/>
+      <stop offset=".38" stop-color="#FFE99A"/>
+      <stop offset=".46" stop-color="#FFFFFF"/>
+      <stop offset=".56" stop-color="#D5A326"/>
+      <stop offset=".67" stop-color="#704708"/>
+      <stop offset=".78" stop-color="#FFF0A3"/>
+      <stop offset=".89" stop-color="#D6A82A"/>
+      <stop offset="1" stop-color="#432904"/>
+    </linearGradient>
+    <linearGradient id="goldHighlight" x1="95" y1="65" x2="1040" y2="800" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="1"/>
+      <stop offset=".2" stop-color="#FFFBE7" stop-opacity=".98"/>
+      <stop offset=".42" stop-color="#F4C94E" stop-opacity=".35"/>
+      <stop offset=".58" stop-color="#FFFFFF" stop-opacity="1"/>
+      <stop offset=".76" stop-color="#FFF1A8" stop-opacity=".92"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity=".72"/>
+    </linearGradient>
+    <linearGradient id="goldSpecular" x1="70" y1="55" x2="1105" y2="845" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity=".98"/>
+      <stop offset=".16" stop-color="#FFF9D4" stop-opacity=".45"/>
+      <stop offset=".3" stop-color="#FFFFFF" stop-opacity=".08"/>
+      <stop offset=".43" stop-color="#FFFFFF" stop-opacity="1"/>
+      <stop offset=".47" stop-color="#FFFFFF" stop-opacity=".28"/>
+      <stop offset=".65" stop-color="#FFF2AD" stop-opacity=".06"/>
+      <stop offset=".8" stop-color="#FFFFFF" stop-opacity=".92"/>
+      <stop offset="1" stop-color="#FFF8D0" stop-opacity=".28"/>
+    </linearGradient>
+
+    <!-- Corpo do botão com proporção exata 1020:765 = 4:3. -->
+    <clipPath id="buttonClip">
+      <rect x="90" y="68" width="1020" height="765" rx="170"/>
+    </clipPath>
+    <filter id="buttonShadow" x="-18%" y="-20%" width="136%" height="155%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="24" stdDeviation="22" flood-color="#503B3D" flood-opacity=".34"/>
+    </filter>
+    <filter id="softMarble" x="-18%" y="-20%" width="136%" height="140%">
+      <feGaussianBlur stdDeviation="14"/>
+    </filter>
+    <filter id="softGloss" x="-20%" y="-40%" width="140%" height="180%">
+      <feGaussianBlur stdDeviation="18"/>
+    </filter>
+    <filter id="veinSoft" x="-8%" y="-15%" width="116%" height="130%">
+      <feGaussianBlur stdDeviation=".8"/>
+    </filter>
+    <filter id="rimLift" x="-12%" y="-15%" width="124%" height="140%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="12" stdDeviation="8" flood-color="#4A2C05" flood-opacity=".56"/>
+    </filter>
+    <filter id="cartLift" x="-18%" y="-18%" width="136%" height="145%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="17" stdDeviation="11" flood-color="#55320A" flood-opacity=".48"/>
+    </filter>
+  </defs>
+
+  <!-- Corpo 4:3; toda a decoração visual permanece dentro dele. -->
+  <rect x="82" y="60" width="1036" height="781" rx="182" fill="#78645D" opacity=".38" filter="url(#buttonShadow)"/>
+  <rect x="90" y="68" width="1020" height="765" rx="170" fill="url(#pearlBase)"/>
+
+  <g clip-path="url(#buttonClip)">
+    <rect x="90" y="68" width="1020" height="765" fill="url(#pearlSheen)"/>
+    <rect x="90" y="68" width="1020" height="765" fill="url(#pearlIridescence)"/>
+
+    <!-- Mármore claro, com muito mais pérola que rosa. -->
+    <path
+      d="M-30 280c160-113 306-108 437 15 121 113 251 122 392 27 146-99 292-91 441 26v178c-151-105-291-109-422-13-153 112-302 103-447-28-122-110-256-116-401-22Z"
+      fill="url(#marbleIvory)"
+      filter="url(#softMarble)"
+    />
+    <path
+      d="M-25 676c162-145 323-151 483-19 143 118 283 113 421-15 129-120 257-128 386-22v188c-123-91-242-72-355 55-155 174-319 184-493 31-151-133-298-125-442 24Z"
+      fill="url(#marbleChampagne)"
+      filter="url(#softMarble)"
+    />
+    <path
+      d="M15 135c149 126 306 178 473 156 172-22 311-105 418-250 104-141 225-166 364-74l12 155c-126-76-236-45-329 93-119 177-279 274-480 291-184 16-351-43-503-178Z"
+      fill="url(#marbleBlush)"
+      filter="url(#softMarble)"
+    />
+
+    <!-- Veios finos dão leitura de mármore real sobre as massas translúcidas. -->
+    <g fill="none" stroke="url(#marbleVein)" stroke-linecap="round" filter="url(#veinSoft)">
+      <path d="M62 390c153-74 258-54 357 34 106 95 215 99 337 14 117-82 244-90 386-24" stroke-width="5"/>
+      <path d="M34 646c163-99 300-94 430 11 122 99 248 105 382 19 117-76 228-81 340-21" stroke-width="3.6" opacity=".78"/>
+      <path d="M190 123c107 96 212 132 316 109 119-27 222-98 310-214" stroke-width="3" opacity=".64"/>
+      <path d="M257 540c72-39 131-36 179 9 50 48 108 54 174 17" stroke-width="2.3" opacity=".56"/>
+    </g>
+
+    <!-- Reflexos internos intensificam o shiny sem ultrapassar o botão. -->
+    <ellipse cx="430" cy="195" rx="390" ry="118" fill="#FFFFFF" opacity=".5" filter="url(#softGloss)" transform="rotate(-8 430 195)"/>
+    <path
+      d="M162 180Q600 63 1038 180"
+      fill="none"
+      stroke="#FFFFFF"
+      stroke-opacity=".84"
+      stroke-width="24"
+      stroke-linecap="round"
+    />
+    <path
+      d="M205 240Q600 145 995 240"
+      fill="none"
+      stroke="#FFFFFF"
+      stroke-opacity=".25"
+      stroke-width="9"
+      stroke-linecap="round"
+    />
+    <ellipse cx="885" cy="700" rx="330" ry="105" fill="#C58FA2" opacity=".12" filter="url(#softGloss)" transform="rotate(-9 885 700)"/>
+  </g>
+
+  <!-- Fundo recuado: aro interno rosado e sombra inferior criam distância. -->
+  <rect x="119" y="97" width="962" height="707" rx="143" fill="none" stroke="#B97D91" stroke-opacity=".2" stroke-width="34"/>
+  <rect x="111" y="89" width="978" height="723" rx="150" fill="none" stroke="#FFFFFF" stroke-opacity=".7" stroke-width="17"/>
+  <path d="M176 742Q600 846 1024 742" fill="none" stroke="#A76F82" stroke-opacity=".24" stroke-width="27" stroke-linecap="round"/>
+
+  <!-- Aro metálico mais brilhante. -->
+  <rect x="88" y="66" width="1024" height="769" rx="172" fill="none" stroke="#422803" stroke-width="44" filter="url(#rimLift)"/>
+  <rect x="88" y="66" width="1024" height="769" rx="172" fill="none" stroke="url(#buttonGold)" stroke-width="29"/>
+  <rect x="88" y="66" width="1024" height="769" rx="172" fill="none" stroke="url(#goldHighlight)" stroke-width="14"/>
+  <rect x="88" y="66" width="1024" height="769" rx="172" fill="none" stroke="url(#goldSpecular)" stroke-width="3.5"/>
+
+  <!--
+    Carrinho centralizado pelo ponto médio das rodas:
+    ((620 + 874) / 2 × .76) + 32.28 = 600, o centro horizontal do botão.
+  -->
+  <g transform="translate(32.28 -55) scale(.76)" fill="none" filter="url(#cartLift)">
+    <g stroke="#422803" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M242 302h112c31 0 58 21 65 52l102 442c8 36 40 62 77 62h334" stroke-width="42"/>
+      <path d="M443 435h565l-66 286c-9 40-45 69-86 69H520" stroke-width="42"/>
+      <path d="M468 548h514 M493 664h462 M578 447l29 330 M727 447v330 M876 447l-30 330" stroke-width="34"/>
+      <path d="M590 910h310" stroke-width="42"/>
+      <circle cx="620" cy="982" r="45" stroke-width="42"/>
+      <circle cx="874" cy="982" r="45" stroke-width="42"/>
+    </g>
+    <g stroke="url(#buttonGold)" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M242 302h112c31 0 58 21 65 52l102 442c8 36 40 62 77 62h334" stroke-width="32"/>
+      <path d="M443 435h565l-66 286c-9 40-45 69-86 69H520" stroke-width="32"/>
+      <path d="M468 548h514 M493 664h462 M578 447l29 330 M727 447v330 M876 447l-30 330" stroke-width="24"/>
+      <path d="M590 910h310" stroke-width="32"/>
+      <circle cx="620" cy="982" r="45" stroke-width="32"/>
+      <circle cx="874" cy="982" r="45" stroke-width="32"/>
+    </g>
+    <g stroke="url(#goldHighlight)" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M242 302h112c31 0 58 21 65 52l102 442c8 36 40 62 77 62h334" stroke-width="14"/>
+      <path d="M443 435h565l-66 286c-9 40-45 69-86 69H520" stroke-width="14"/>
+      <path d="M468 548h514 M493 664h462 M578 447l29 330 M727 447v330 M876 447l-30 330" stroke-width="10"/>
+      <path d="M590 910h310" stroke-width="14"/>
+      <circle cx="620" cy="982" r="45" stroke-width="14"/>
+      <circle cx="874" cy="982" r="45" stroke-width="14"/>
+    </g>
+    <g stroke="url(#goldSpecular)" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M242 302h112c31 0 58 21 65 52l102 442c8 36 40 62 77 62h334" stroke-width="4.5"/>
+      <path d="M443 435h565l-66 286c-9 40-45 69-86 69H520" stroke-width="4.5"/>
+      <path d="M468 548h514 M493 664h462 M578 447l29 330 M727 447v330 M876 447l-30 330" stroke-width="3"/>
+      <path d="M590 910h310" stroke-width="4.5"/>
+      <circle cx="620" cy="982" r="45" stroke-width="4.5"/>
+      <circle cx="874" cy="982" r="45" stroke-width="4.5"/>
+    </g>
+  </g>
+</svg>
