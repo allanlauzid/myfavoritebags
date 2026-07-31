@@ -124,7 +124,7 @@ body {
   margin: 0;
   color: var(--maintenance-pearl);
   font-family: 'Cormorant Garamond', serif;
-  font-size: clamp(1.85rem, 8.6vw, 3.35rem);
+  font-size: clamp(2.22rem, 10.3vw, 4.02rem);
   font-weight: 400;
   letter-spacing: -.02em;
   line-height: 1.08;
@@ -225,29 +225,27 @@ body {
 }
 
 /* Dock fixo na base da tela: a logo do Match fica propositalmente cortada
-   ao meio (metade escondida abaixo da borda), e "pula" pra cima de tempos
-   em tempos pra chamar atenção — como se estivesse tentando sair do corte. */
+   ao meio no repouso (a metade de baixo simplesmente sai da viewport — sem
+   overflow:hidden no dock, pra não capar o pulo) e "pula" pra cima de forma
+   espontânea/bagunçada de tempos em tempos, sempre por CIMA do texto
+   (z-index maior que o conteúdo), pra chamar atenção. */
 .maintenance-match-dock {
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 2;
+  z-index: 5;
   display: flex;
   justify-content: center;
-  align-items: flex-end;
-  height: clamp(46px, 13vw, 62px);
-  overflow: hidden;
   pointer-events: none;
-  padding-bottom: env(safe-area-inset-bottom);
 }
 
 .maintenance-match-hand {
   position: absolute;
-  bottom: clamp(58px, 15vw, 76px);
+  bottom: clamp(70px, 19vw, 92px);
   display: flex;
   color: var(--maintenance-pearl);
-  animation: matchHandPoint 2.4s ease-in-out infinite;
+  animation: matchHandPoint 3.2s ease-in-out infinite;
 }
 
 .maintenance-match-hand svg {
@@ -261,7 +259,7 @@ body {
   pointer-events: auto;
   border-radius: 50%;
   -webkit-tap-highlight-color: transparent;
-  animation: matchLogoJump 2.4s cubic-bezier(.34, 1.2, .4, 1) infinite;
+  animation: matchLogoJump 3.2s cubic-bezier(.36, .68, .34, 1) infinite;
 }
 
 .maintenance-match-link:active {
@@ -275,34 +273,49 @@ body {
   filter: drop-shadow(0 10px 16px rgba(7, 3, 2, .32));
 }
 
+/* Pulo espontâneo: dois saltos de alturas diferentes, com deriva lateral
+   aleatória-ish e uma pausa em repouso no fim do ciclo — evita o efeito
+   "robótico" de subir, parar no ar e descer sempre igual. */
 @keyframes matchLogoJump {
-  0%, 18% {
-    transform: translateY(56%);
+  0% {
+    transform: translate(0, 55%) rotate(0deg);
+  }
+  6% {
+    transform: translate(2%, 58%) rotate(-1deg);
+  }
+  16% {
+    transform: translate(-4%, -6%) rotate(-5deg);
+  }
+  24% {
+    transform: translate(3%, 8%) rotate(3deg);
+  }
+  30% {
+    transform: translate(-2%, -2%) rotate(-2deg);
   }
   38% {
-    transform: translateY(-4%);
+    transform: translate(5%, 22%) rotate(4deg);
   }
-  52% {
-    transform: translateY(2%);
+  46% {
+    transform: translate(-3%, 4%) rotate(-3deg);
   }
-  68% {
-    transform: translateY(24%);
+  53% {
+    transform: translate(1%, 32%) rotate(1deg);
   }
-  84%, 100% {
-    transform: translateY(56%);
+  60%, 100% {
+    transform: translate(0, 55%) rotate(0deg);
   }
 }
 
 @keyframes matchHandPoint {
-  0%, 18% {
+  0%, 12% {
     opacity: 0;
     transform: translateY(6px);
   }
-  30%, 60% {
+  22%, 48% {
     opacity: 1;
     transform: translateY(0);
   }
-  75%, 100% {
+  58%, 100% {
     opacity: 0;
     transform: translateY(6px);
   }
@@ -409,7 +422,7 @@ body {
   }
 
   .maintenance-match-link {
-    transform: translateY(50%);
+    transform: translate(0, 55%);
   }
 
   .maintenance-match-hand {
