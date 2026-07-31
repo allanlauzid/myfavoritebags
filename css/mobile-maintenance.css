@@ -120,20 +120,23 @@ body {
 }
 
 .maintenance-title {
-  max-width: 12ch;
+  max-width: 100%;
   margin: 0;
   color: var(--maintenance-pearl);
   font-family: 'Cormorant Garamond', serif;
-  font-size: clamp(2.65rem, 12vw, 4.15rem);
+  font-size: clamp(1.85rem, 8.6vw, 3.35rem);
   font-weight: 400;
-  letter-spacing: -.025em;
-  line-height: .98;
-  text-wrap: balance;
+  letter-spacing: -.02em;
+  line-height: 1.08;
+  white-space: nowrap;
   animation: copyEntrance 700ms 220ms var(--maintenance-ease) both;
 }
 
-.maintenance-title strong {
+.maintenance-title-line {
   display: block;
+}
+
+.maintenance-title strong.maintenance-title-line {
   margin-block: .12em;
   color: var(--maintenance-copper-light);
   font-weight: 400;
@@ -205,38 +208,104 @@ body {
   font-weight: 300;
   letter-spacing: .04em;
   text-transform: uppercase;
+  line-height: 1.7;
   animation: copyEntrance 700ms 480ms var(--maintenance-ease) both;
 }
 
+.maintenance-match-brand {
+  display: inline-block;
+  margin-top: 2px;
+  color: var(--maintenance-copper-light);
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.55rem;
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: .01em;
+  text-transform: none;
+}
+
+/* Dock fixo na base da tela: a logo do Match fica propositalmente cortada
+   ao meio (metade escondida abaixo da borda), e "pula" pra cima de tempos
+   em tempos pra chamar atenção — como se estivesse tentando sair do corte. */
+.maintenance-match-dock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  height: clamp(46px, 13vw, 62px);
+  overflow: hidden;
+  pointer-events: none;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.maintenance-match-hand {
+  position: absolute;
+  bottom: clamp(58px, 15vw, 76px);
+  display: flex;
+  color: var(--maintenance-pearl);
+  animation: matchHandPoint 2.4s ease-in-out infinite;
+}
+
+.maintenance-match-hand svg {
+  width: 26px;
+  height: 26px;
+  filter: drop-shadow(0 4px 8px rgba(7, 3, 2, .35));
+}
+
 .maintenance-match-link {
-  display: inline-flex;
-  margin-top: 10px;
-  border-radius: 16px;
+  display: block;
+  pointer-events: auto;
+  border-radius: 50%;
   -webkit-tap-highlight-color: transparent;
-  transition: transform 160ms ease-out, opacity 160ms ease-out;
-  animation: copyEntrance 700ms 560ms var(--maintenance-ease) both;
-}
-
-.maintenance-match-link:hover,
-.maintenance-match-link:focus-visible {
-  transform: scale(1.04);
-  opacity: .9;
-}
-
-.maintenance-match-link:focus-visible {
-  outline: 2px solid var(--maintenance-pearl);
-  outline-offset: 4px;
+  animation: matchLogoJump 2.4s cubic-bezier(.34, 1.2, .4, 1) infinite;
 }
 
 .maintenance-match-link:active {
-  transform: scale(.97);
+  filter: brightness(.94);
 }
 
 .maintenance-match-logo {
   display: block;
-  width: clamp(84px, 22vw, 108px);
+  width: clamp(92px, 24vw, 118px);
   height: auto;
-  filter: drop-shadow(0 10px 16px rgba(7, 3, 2, .28));
+  filter: drop-shadow(0 10px 16px rgba(7, 3, 2, .32));
+}
+
+@keyframes matchLogoJump {
+  0%, 18% {
+    transform: translateY(56%);
+  }
+  38% {
+    transform: translateY(-4%);
+  }
+  52% {
+    transform: translateY(2%);
+  }
+  68% {
+    transform: translateY(24%);
+  }
+  84%, 100% {
+    transform: translateY(56%);
+  }
+}
+
+@keyframes matchHandPoint {
+  0%, 18% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  30%, 60% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  75%, 100% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
 }
 
 @keyframes copperAtmosphere {
@@ -332,7 +401,19 @@ body {
   .maintenance-logo,
   .maintenance-title,
   .maintenance-copy,
-  .maintenance-instagram {
+  .maintenance-instagram,
+  .maintenance-match-copy,
+  .maintenance-match-link,
+  .maintenance-match-hand {
     animation: none !important;
+  }
+
+  .maintenance-match-link {
+    transform: translateY(50%);
+  }
+
+  .maintenance-match-hand {
+    opacity: 1;
+    transform: none;
   }
 }
