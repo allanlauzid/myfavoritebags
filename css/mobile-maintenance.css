@@ -240,20 +240,6 @@ body {
   pointer-events: none;
 }
 
-.maintenance-match-hand {
-  position: absolute;
-  bottom: clamp(70px, 19vw, 92px);
-  display: flex;
-  color: var(--maintenance-pearl);
-  animation: matchHandPoint 3.2s ease-in-out infinite;
-}
-
-.maintenance-match-hand svg {
-  width: 26px;
-  height: 26px;
-  filter: drop-shadow(0 4px 8px rgba(7, 3, 2, .35));
-}
-
 .maintenance-match-link {
   display: block;
   pointer-events: auto;
@@ -303,21 +289,6 @@ body {
   }
   60%, 100% {
     transform: translate(0, 55%) rotate(0deg);
-  }
-}
-
-@keyframes matchHandPoint {
-  0%, 12% {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  22%, 48% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  58%, 100% {
-    opacity: 0;
-    transform: translateY(6px);
   }
 }
 
@@ -416,17 +387,11 @@ body {
   .maintenance-copy,
   .maintenance-instagram,
   .maintenance-match-copy,
-  .maintenance-match-link,
-  .maintenance-match-hand {
+  .maintenance-match-link {
     animation: none !important;
   }
 
   .maintenance-match-link {
     transform: translate(0, 55%);
-  }
-
-  .maintenance-match-hand {
-    opacity: 1;
-    transform: none;
   }
 }
