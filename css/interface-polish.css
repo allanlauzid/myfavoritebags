@@ -26,9 +26,12 @@ p, li, figcaption, .cat-desc, .hero-sub, .about-body, .login-s,
   font-variant-numeric:tabular-nums;
 }
 
-/* Molduras de produto e prévias; logos e elementos decorativos ficam intactos. */
-.pcard-visual > img,
-#modalPhoto,
+/* Molduras de produto e prévias; logos e elementos decorativos ficam intactos.
+   Itens flutuantes do catálogo (.pcard-float) e a foto do modal de detalhes
+   NÃO recebem esse contorno — eles ficam soltos, sem moldura nenhuma, então
+   o outline (que segue o retângulo da <img>, não o recorte transparente da
+   foto) apareceria como uma caixa fantasma atrás da peça. */
+.pcard-visual > img:not(.bag-photo),
 #npPhotoOriginal,
 #npPhotoResult,
 #npPhotoFinal,
@@ -37,7 +40,7 @@ p, li, figcaption, .cat-desc, .hero-sub, .about-body, .login-s,
   outline-offset:-1px;
 }
 .pcard-visual > img { object-fit:contain !important; }
-#modalPhoto { object-fit:contain !important; background:var(--bg2); }
+#modalPhoto { object-fit:contain !important; background:transparent !important; outline:none !important; }
 
 /* Filtros: no desktop rolam junto com o catálogo normalmente (sem grudar no
    topo). O "sticky" continua só no mobile (ver @media(max-width:600px) mais

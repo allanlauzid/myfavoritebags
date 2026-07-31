@@ -139,7 +139,17 @@ async function sbFetchLooks() {
 }
 
 async function sbFetchSettings() {
-  const rows = await sbSelect('site_settings');
+  // site_settings não possui sort_order; por isso não pode usar sbSelect(),
+  // que ordena catálogos por essa coluna.
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/site_settings?select=*`, {
+    headers: {
+      apikey: SUPABASE_PUBLISHABLE_KEY,
+      Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
+    },
+    cache: 'no-store',
+  });
+  if (!res.ok) throw new Error(`Falha ao buscar site_settings: ${res.status}`);
+  const rows = await res.json();
   const out = {};
   rows.forEach(r => { out[r.key] = r.value; });
   return out;
