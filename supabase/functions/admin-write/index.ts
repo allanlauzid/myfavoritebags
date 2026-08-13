@@ -6,6 +6,7 @@
 
 import { serve } from "https://deno.land/std@0.203.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { imageUsagesForPath, loadCatalogImageRows } from "./image-usage.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -561,6 +562,7 @@ serve(async (req) => {
           headers: JSON_HEADERS,
         });
       }
+      const catalogs = await loadCatalogImageRows(supabase);
       const files = (data || []).filter((f) => f.id); // ignora "pastas" fantasma
       const images = files.map((f) => {
         const { data: pub } = supabase.storage.from("product-images").getPublicUrl(f.name);
@@ -569,6 +571,7 @@ serve(async (req) => {
           url: pub.publicUrl,
           created_at: f.created_at,
           size: f.metadata?.size ?? null,
+          usedBy: imageUsagesForPath(catalogs, f.name),
         };
       });
       return new Response(JSON.stringify({ data: images }), {
@@ -690,6 +693,25 @@ serve(async (req) => {
     // Apaga uma imagem da galeria (Storage).
     if (action === "delete_image") {
       const { path } = payload;
+      if (typeof path !== "string" || !path.trim()) {
+        return new Response(JSON.stringify({ error: "Caminho da imagem inválido." }), {
+          status: 400,
+          headers: JSON_HEADERS,
+        });
+      }
+      const catalogs = await loadCatalogImageRows(supabase);
+      const usages = imageUsagesForPath(catalogs, path);
+      if (usages.length) {
+        const names = usages.map((usage) => `\"${usage.name}\"`).join(", ");
+        return new Response(JSON.stringify({
+          error: `Esta imagem está em uso por ${names}. Troque a imagem no cadastro antes de excluí-la da galeria.`,
+          code: "image_in_use",
+          usages,
+        }), {
+          status: 409,
+          headers: JSON_HEADERS,
+        });
+      }
       const { error } = await supabase.storage.from("product-images").remove([path]);
       if (error) {
         return new Response(JSON.stringify({ error: error.message }), {

@@ -174,7 +174,13 @@ async function sbAdminWrite(table, action, payload, extra) {
     body: JSON.stringify({ password: getAdminPassword(), table, action, payload, ...(extra || {}) }),
   });
   const json = await res.json();
-  if (!res.ok || json.error) throw new Error(json.error || `Falha ao gravar em ${table}`);
+  if (!res.ok || json.error) {
+    const error = new Error(json.error || `Falha ao gravar em ${table}`);
+    error.code = json.code || null;
+    error.status = res.status;
+    error.usages = Array.isArray(json.usages) ? json.usages : [];
+    throw error;
+  }
   return json.data;
 }
 
@@ -354,6 +360,19 @@ async function sbListGalleryImages() {
 }
 async function sbDeleteGalleryImage(path) {
   return sbAdminWrite(null, 'delete_image', { path });
+}
+
+function sbImageUsageSummary(usages) {
+  const list = Array.isArray(usages) ? usages : [];
+  return list.map(usage => {
+    const section = usage.table === 'looks' ? 'My Favorite Looks' : 'My Favorite Bags';
+    return `${usage.name} (${section})`;
+  }).join(', ');
+}
+
+function sbImageInUseMessage(usages) {
+  const summary = sbImageUsageSummary(usages);
+  return `Não é possível excluir esta imagem.\n\nEla está sendo usada por: ${summary || 'um item publicado'}.\n\nTroque ou remova a imagem no cadastro antes de excluí-la da galeria.`;
 }
 
 // ── Conversão para WebP — roda no navegador, sem precisar de servidor ──────

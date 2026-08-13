@@ -3573,29 +3573,44 @@ async function refreshGalleryGrid() {
 
 // Apaga de uma vez todas as imagens que estão passando pelos filtros ativos
 // no momento (original/sem fundo + formato) — não as que estão fora dele.
+function galleryProtectedImagesMessage(images) {
+  return images.map(img => `• ${img.name}: ${sbImageUsageSummary(img.usedBy)}`).join('\n');
+}
+
 async function deleteFilteredGalleryImages() {
   const list = getFilteredGalleryList();
   if (!list.length) {
     showToast('Nenhuma imagem no filtro atual.');
     return;
   }
+  const protectedImages = list.filter(img => Array.isArray(img.usedBy) && img.usedBy.length);
+  const deletableImages = list.filter(img => !Array.isArray(img.usedBy) || !img.usedBy.length);
+  if (!deletableImages.length) {
+    alert(`Nenhuma imagem foi excluída porque todas estão em uso:\n\n${galleryProtectedImagesMessage(protectedImages)}\n\nTroque as imagens nos respectivos cadastros antes de excluí-las da galeria.`);
+    return;
+  }
   const label = _galleryFilter === 'original' ? 'originais' : _galleryFilter === 'nobg' ? 'sem fundo' : 'imagens';
   const formatLabel = _galleryFormatFilter === 'nonwebp' ? ' não-WEBP' : _galleryFormatFilter === 'webp' ? ' WEBP' : '';
-  if (!confirm(`Apagar ${list.length}${formatLabel} ${label} da galeria (filtro atual)? Essa ação não pode ser desfeita.`)) return;
+  const protectedNote = protectedImages.length ? `\n\n${protectedImages.length} imagem${protectedImages.length === 1 ? '' : 'ns'} em uso será${protectedImages.length === 1 ? '' : 'ão'} mantida${protectedImages.length === 1 ? '' : 's'}.` : '';
+  if (!confirm(`Apagar ${deletableImages.length}${formatLabel} ${label} da galeria (filtro atual)? Essa ação não pode ser desfeita.${protectedNote}`)) return;
   const btn = document.getElementById('galDeleteFilteredBtn');
   if (btn) { btn.disabled = true; btn.textContent = 'Apagando…'; }
   let okCount = 0, failCount = 0;
-  for (const img of list) {
+  const blockedDuringDelete = [];
+  for (const img of deletableImages) {
     try {
       await sbDeleteGalleryImage(img.name);
       okCount++;
     } catch (e) {
-      failCount++;
+      if (e.code === 'image_in_use') blockedDuringDelete.push({ ...img, usedBy: e.usages });
+      else failCount++;
     }
   }
   await refreshGalleryGrid();
   if (btn) { btn.disabled = false; btn.textContent = 'Excluir filtrados'; }
+  const allProtected = protectedImages.concat(blockedDuringDelete);
   showToast(failCount ? `${okCount} apagada${okCount === 1 ? '' : 's'}, ${failCount} falharam.` : `${okCount} imagem${okCount === 1 ? '' : 'ns'} apagada${okCount === 1 ? '' : 's'}.`);
+  if (allProtected.length) alert(`As imagens abaixo foram mantidas porque estão em uso:\n\n${galleryProtectedImagesMessage(allProtected)}`);
 }
 
 function setGalleryFilter(f) {
@@ -3652,12 +3667,15 @@ function renderGalleryGrid() {
     return;
   }
   grid.innerHTML = list.map(img => {
+    const usages = Array.isArray(img.usedBy) ? img.usedBy : [];
+    const usageSummary = sbImageUsageSummary(usages);
     return `
     <div class="gal-card">
       <div class="gal-card-img" role="button" tabindex="0" aria-label="Ampliar ${_pimEscape(img.name)}" onclick="openImageZoom('${_pimEscape(img.url)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openImageZoom('${_pimEscape(img.url)}');}">
         <img src="${_pimEscape(img.url)}" alt="${_pimEscape(img.name)}" loading="lazy"${isGalleryNoBg(img.name) ? ' class="gal-img-float"' : ''}>
         <span class="gal-badge gal-badge-format ${isGalleryWebp(img.name) ? 'gal-badge-webp' : 'gal-badge-png'}">${isGalleryWebp(img.name) ? 'WEBP' : 'PNG'}</span>
         ${isGalleryNoBg(img.name) ? '<span class="gal-badge" style="left:auto;right:6px;">Sem fundo</span>' : ''}
+        ${usages.length ? `<span class="gal-badge" style="top:auto;bottom:6px;background:#7A1E1E;color:#fff;" title="Em uso por ${_pimEscape(usageSummary)}">Em uso${usages.length > 1 ? ` (${usages.length})` : ''}</span>` : ''}
         ${!_galleryPickerCallback ? `<button type="button" class="gal-add-btn" title="Adicionar ao catálogo" aria-label="Adicionar ${_pimEscape(img.name)} ao catálogo" onclick="event.stopPropagation();addGalleryImageToCatalog('${_pimEscape(img.name)}','${_pimEscape(img.url)}')">${PLUS_SVG}</button>` : ''}
       </div>
       <p class="gal-card-name" title="${_pimEscape(img.name)}">${_pimEscape(img.name)}${img.size != null ? ` · ${formatBytes(img.size)}` : ''}</p>
@@ -3971,12 +3989,17 @@ function downloadGalleryImage(url, name) {
 }
 
 async function deleteGalleryImage(name) {
+  const image = _galleryImages.find(img => img.name === name);
+  if (image && Array.isArray(image.usedBy) && image.usedBy.length) {
+    alert(sbImageInUseMessage(image.usedBy));
+    return;
+  }
   if (!confirm(`Apagar "${name}" da galeria? Essa ação não pode ser desfeita.`)) return;
   try {
     await sbDeleteGalleryImage(name);
     await refreshGalleryGrid();
   } catch (e) {
-    alert('Não foi possível apagar: ' + e.message);
+    alert(e.code === 'image_in_use' ? sbImageInUseMessage(e.usages) : 'Não foi possível apagar: ' + e.message);
   }
 }
 
