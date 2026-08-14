@@ -286,7 +286,7 @@ function stageCatalogProductImage(product, dataUrl, filename) {
   const isHttp = typeof dataUrl === 'string' && dataUrl.startsWith('http');
   _pendingCatalogImages.set(product.id, {
     dataUrl,
-    filename:filename || current.filename || `catalogo-${product.id}-${Date.now()}.webp`,
+    filename: filename || current.filename || `catalogo-${product.id}-${Date.now()}.webp`,
     uploadedUrl: isHttp ? dataUrl : null,
   });
   product.img = dataUrl || '';
@@ -294,6 +294,29 @@ function stageCatalogProductImage(product, dataUrl, filename) {
   // este arquivo. Fica vazio até finalizePendingProductImages() gerar/subir
   // as novas variantes e preencher de novo.
   product.imgSrcset = '';
+}
+
+// Retorna usos da imagem no catálogo carregado no navegador (incluindo rascunhos)
+function getLocalImageUsages(imageName) {
+  const usages = [];
+  if (typeof products !== 'undefined' && Array.isArray(products)) {
+    const tableStr = window.location.pathname.includes('looks') ? 'looks' : 'bags';
+    for (const p of products) {
+      let isUsed = false;
+      const pending = _pendingCatalogImages.get(p.id);
+      if (pending && pending.dataUrl) {
+        if (pending.dataUrl.includes(imageName)) isUsed = true;
+      } else {
+        if (p.img && p.img.includes(imageName)) isUsed = true;
+        if (p.img_srcset && p.img_srcset.includes(imageName)) isUsed = true;
+        if (p.images && p.images.some(img => img.includes(imageName))) isUsed = true;
+      }
+      if (isUsed) {
+        usages.push({ name: p.name, table: tableStr });
+      }
+    }
+  }
+  return usages;
 }
 
 async function finalizePendingProductImages() {

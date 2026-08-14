@@ -372,7 +372,7 @@ function sbImageUsageSummary(usages) {
 
 function sbImageInUseMessage(usages) {
   const summary = sbImageUsageSummary(usages);
-  return `Não é possível excluir esta imagem.\n\nEla está sendo usada por: ${summary || 'um item publicado'}.\n\nTroque ou remova a imagem no cadastro antes de excluí-la da galeria.`;
+  return `Não é possível excluir esta imagem.\n\nEla está sendo usada por: ${summary || 'um item publicado'}.\n\nPara deletar a imagem, é necessário remover a publicação ou desvinculá-la do cadastro.`;
 }
 
 // ── Conversão para WebP — roda no navegador, sem precisar de servidor ──────

@@ -704,7 +704,7 @@ serve(async (req) => {
       if (usages.length) {
         const names = usages.map((usage) => `\"${usage.name}\"`).join(", ");
         return new Response(JSON.stringify({
-          error: `Esta imagem está em uso por ${names}. Troque a imagem no cadastro antes de excluí-la da galeria.`,
+          error: `Esta imagem está em uso por ${names}. Para deletar a imagem, é necessário remover a publicação ou desvinculá-la do cadastro.`,
           code: "image_in_use",
           usages,
         }), {

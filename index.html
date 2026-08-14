@@ -4658,7 +4658,16 @@ async function refreshGalleryGrid() {
 // Apaga de uma vez todas as imagens que estão passando pelos filtros ativos
 // no momento (original/sem fundo + formato) — não as que estão fora dele.
 function galleryProtectedImagesMessage(images) {
-  return images.map(img => `• ${img.name}: ${sbImageUsageSummary(img.usedBy)}`).join('\n');
+  return images.map(img => {
+    let usages = Array.isArray(img.usedBy) ? img.usedBy.slice() : [];
+    if (typeof getLocalImageUsages === 'function') {
+      const localUsages = getLocalImageUsages(img.name);
+      for (const lu of localUsages) {
+        if (!usages.find(u => u.name === lu.name && u.table === lu.table)) usages.push(lu);
+      }
+    }
+    return `• ${img.name}: ${sbImageUsageSummary(usages)}`;
+  }).join('\n');
 }
 
 async function deleteFilteredGalleryImages() {
@@ -4667,10 +4676,21 @@ async function deleteFilteredGalleryImages() {
     showToast('Nenhuma imagem no filtro atual.');
     return;
   }
-  const protectedImages = list.filter(img => Array.isArray(img.usedBy) && img.usedBy.length);
-  const deletableImages = list.filter(img => !Array.isArray(img.usedBy) || !img.usedBy.length);
+  
+  const protectedImages = list.filter(img => {
+    let usages = Array.isArray(img.usedBy) ? img.usedBy.slice() : [];
+    if (typeof getLocalImageUsages === 'function') {
+      const localUsages = getLocalImageUsages(img.name);
+      for (const lu of localUsages) {
+        if (!usages.find(u => u.name === lu.name && u.table === lu.table)) usages.push(lu);
+      }
+    }
+    return usages.length > 0;
+  });
+  
+  const deletableImages = list.filter(img => !protectedImages.includes(img));
   if (!deletableImages.length) {
-    alert(`Nenhuma imagem foi excluída porque todas estão em uso:\n\n${galleryProtectedImagesMessage(protectedImages)}\n\nTroque as imagens nos respectivos cadastros antes de excluí-las da galeria.`);
+    alert(`Nenhuma imagem foi excluída porque todas estão em uso:\n\n${galleryProtectedImagesMessage(protectedImages)}\n\nPara deletá-las da galeria, remova a publicação ou desvincule a imagem nos respectivos cadastros.`);
     return;
   }
   const label = _galleryFilter === 'original' ? 'originais' : _galleryFilter === 'nobg' ? 'sem fundo' : 'imagens';
@@ -5105,8 +5125,19 @@ function downloadGalleryImage(url, name) {
 
 async function deleteGalleryImage(name) {
   const image = _galleryImages.find(img => img.name === name);
-  if (image && Array.isArray(image.usedBy) && image.usedBy.length) {
-    alert(sbImageInUseMessage(image.usedBy));
+  let usages = image && Array.isArray(image.usedBy) ? image.usedBy.slice() : [];
+  
+  if (typeof getLocalImageUsages === 'function') {
+    const localUsages = getLocalImageUsages(name);
+    for (const lu of localUsages) {
+      if (!usages.find(u => u.name === lu.name && u.table === lu.table)) {
+        usages.push(lu);
+      }
+    }
+  }
+
+  if (usages.length) {
+    alert(sbImageInUseMessage(usages));
     return;
   }
   if (!confirm(`Apagar "${name}" da galeria? Essa ação não pode ser desfeita.`)) return;
