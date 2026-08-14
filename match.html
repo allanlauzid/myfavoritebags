@@ -20,8 +20,18 @@
   if (!_isPreview && _matchState === 'locked') {
     location.replace('index.html');
   }
+  
+  // Oculta o botão My Favorite Looks no Match se estiver desativado no painel
+  document.addEventListener('DOMContentLoaded', () => {
+    try {
+      const looksState = localStorage.getItem('mfb_looks_state') || 'visible';
+      if (looksState !== 'visible') {
+        const btn = document.getElementById('mConfigLooksBtn');
+        if (btn) btn.style.display = 'none';
+      }
+    } catch (_) {}
+  });
 </script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/cursor.css">
 <link rel="stylesheet" href="css/curtain-shared.css">
@@ -807,7 +817,7 @@ button:focus-visible {
 
     <div class="m-config-nav">
       <a href="index.html" id="mConfigBagsBtn" class="m-config-navbtn brand-bags-fill-light">My Favorite Bags <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#B8896F" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>
-      <a href="looks.html" class="m-config-navbtn">My Favorite Looks <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#B8896F" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>
+      <a href="looks.html" id="mConfigLooksBtn" class="m-config-navbtn">My Favorite Looks <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#B8896F" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>
     </div>
   </div>
 
