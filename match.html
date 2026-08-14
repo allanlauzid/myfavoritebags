@@ -1245,9 +1245,10 @@ function cardHTML(it, cls) {
   return `
     <div class="m-card ${cls}" data-id="${it.id}">
       ${it.isNew ? `<div class="m-badge-new">Novidade</div>` : ''}
+      ${(it.images && it.images.length > 1) ? `
       <div class="m-progress">
-        <div class="m-progress-seg filled"><span></span></div>
-      </div>
+        ${it.images.map((img, i) => `<div class="m-progress-seg ${i === 0 ? 'filled' : ''}"><span></span></div>`).join('')}
+      </div>` : ''}
       <div class="m-swipe-badge like">Curtir</div>
       <div class="m-swipe-badge pass">Passar</div>
       <div class="m-swipe-badge super">Favorito</div>
