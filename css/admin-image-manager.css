@@ -392,8 +392,8 @@ html.reduce-motion .pim-btn { transition-duration:.01ms !important; }
 /* CRUD de bolsas */
 .crud-create {
   display:grid;
-  gap:18px;
-  padding:22px;
+  gap:8px;
+  padding:14px 22px;
   margin-bottom:24px;
   border:1px solid var(--line);
   border-radius:14px;

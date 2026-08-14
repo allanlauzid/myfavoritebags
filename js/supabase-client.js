@@ -36,6 +36,7 @@ function fixImgPath(img) {
 function rowToProduct(row) {
   return {
     id: row.id,
+    sku: row.sku || '',
     name: row.name,
     cat: row.cat,
     price: row.price,
@@ -59,6 +60,7 @@ function rowToProduct(row) {
 function productToRow(p) {
   return {
     id: typeof p.id === 'number' && p.id < 1e12 ? p.id : undefined, // ids novos vêm do banco
+    sku: p.sku || null,
     name: p.name,
     cat: p.cat,
     price: p.price,

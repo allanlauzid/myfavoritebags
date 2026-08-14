@@ -246,6 +246,116 @@ function deleteCategory(key) {
   };
 }
 
+// ─── HISTÓRICO DE EXCLUÍDOS ───────────────────────────────────────────────────
+function openDeletedHistoryModal() {
+  const wrap = document.createElement('div');
+  wrap.id = 'deletedHistoryModal';
+  wrap.style.cssText = 'position:fixed;inset:0;z-index:9400;background:rgba(var(--modal-backdrop-rgb),.65);display:flex;align-items:center;justify-content:center;';
+  wrap.innerHTML = `
+    <div style="background:var(--bg);border-radius:12px;padding:28px 32px;max-width:540px;width:92%;max-height:80vh;display:flex;flex-direction:column;font-family:'Jost',sans-serif;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;">
+        <div>
+          <p style="font-size:16px;font-weight:700;color:var(--modal-title);margin-bottom:4px;">Histórico Excluído</p>
+          <p style="font-size:13px;color:var(--modal-muted);">Itens removidos do catálogo. Você pode recriá-los com um novo SKU.</p>
+        </div>
+        <button onclick="document.getElementById('deletedHistoryModal').remove()" style="background:none;border:none;cursor:pointer;color:var(--modal-muted);font-size:20px;line-height:1;">&times;</button>
+      </div>
+      <div id="deletedHistoryList" style="flex:1;overflow-y:auto;padding-right:8px;display:flex;flex-direction:column;gap:12px;"></div>
+    </div>`;
+  document.body.appendChild(wrap);
+  renderDeletedHistoryList();
+}
+
+function renderDeletedHistoryList() {
+  const box = document.getElementById('deletedHistoryList');
+  if (!box) return;
+  const deletedItems = products.filter(p => p.status === 'deleted');
+  if (deletedItems.length === 0) {
+    box.innerHTML = `<p style="font-size:13px;color:var(--modal-muted);text-align:center;padding:20px 0;">Nenhum item excluído encontrado.</p>`;
+    return;
+  }
+  
+  box.innerHTML = deletedItems.map(p => {
+    return `
+      <div style="display:flex;align-items:center;gap:16px;background:var(--white);padding:12px;border-radius:8px;border:1px solid var(--line);">
+        <div style="width:48px;height:64px;border-radius:4px;background:#F2ECE6;overflow:hidden;flex-shrink:0;">
+          ${p.img ? `<img src="${p.img}" style="width:100%;height:100%;object-fit:cover;">` : ''}
+        </div>
+        <div style="flex:1;min-width:0;">
+          <p style="font-size:12px;font-weight:600;color:var(--rose-dark);letter-spacing:0.05em;margin-bottom:2px;">${p.sku || `ID-${p.id}`}</p>
+          <p style="font-size:14px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px;">${p.name}</p>
+          <p style="font-size:12px;color:var(--text-muted);"><span class="deleted-size-placeholder" data-url="${p.img || ''}">Tamanho: calculando...</span></p>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+          <button disabled style="padding:6px 12px;border:1px solid var(--line);background:#f5f5f5;color:#aaa;cursor:not-allowed;font-size:11px;border-radius:4px;">Restaurar</button>
+          <button onclick="cloneDeletedProduct(${p.id})" style="padding:6px 12px;border:1px solid var(--rose-dark);background:transparent;color:var(--rose-dark);cursor:pointer;font-size:11px;border-radius:4px;font-weight:600;">Clonar Imagem</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  // Asynchronously fetch sizes
+  box.querySelectorAll('.deleted-size-placeholder').forEach(el => {
+    const url = el.getAttribute('data-url');
+    if (!url || !url.startsWith('http')) {
+      el.textContent = 'Tamanho: Indisponível';
+      return;
+    }
+    fetch(url, { method: 'HEAD' })
+      .then(r => {
+        const size = r.headers.get('content-length');
+        if (size) {
+          const kb = (parseInt(size, 10) / 1024).toFixed(1);
+          el.textContent = `Tamanho: ${kb} KB`;
+        } else {
+          el.textContent = 'Tamanho: Indisponível';
+        }
+      })
+      .catch(() => el.textContent = 'Tamanho: Indisponível');
+  });
+}
+
+function cloneDeletedProduct(id) {
+  const p = products.find(x => x.id === id);
+  if (!p) return;
+  
+  const isBags = window.location.pathname.includes('index.html') || !window.location.pathname.includes('looks.html');
+  document.getElementById('deletedHistoryModal').remove();
+  
+  if (isBags) {
+    document.getElementById('crudNewName').value = p.name + ' (Clonado - Alterar)';
+    document.getElementById('crudNewPrice').value = p.price;
+    document.getElementById('crudNewDesc').value = ''; // A descrição deve ser diferente
+    document.getElementById('crudNewCat').value = p.cat;
+    renderCrudNewCatSelect();
+    
+    // Set up image
+    const preview = document.getElementById('crudNewPreview');
+    preview.src = p.img;
+    preview.style.display = 'block';
+    crudNewImageSource = p.img;
+    document.getElementById('crudUploadText').textContent = 'Trocar imagem';
+    document.getElementById('crudRemoveBg').disabled = false;
+    
+    document.getElementById('crudNewName').focus();
+    showToast('Imagem clonada. Você DEVE alterar o nome e a descrição para publicar.');
+  } else {
+    // looks.html
+    document.getElementById('nn').value = p.name + ' (Clonado - Alterar)';
+    document.getElementById('np').value = p.price;
+    document.getElementById('nc').value = p.cat;
+    
+    const photoImg = document.getElementById('npPhotoImg');
+    photoImg.src = p.img;
+    newProdFinalImg = p.img;
+    newProdFileName = 'clonado.webp';
+    _npShow('npPhotoFilled');
+    
+    document.getElementById('nn').focus();
+    showToast('Imagem clonada. Você DEVE alterar o nome da peça para publicar.');
+  }
+}
+
 // ─── GERENCIADOR DE IMAGEM DO CATÁLOGO ──────────────────────────────────────
 // Compartilhado entre Bags e Looks. Permite visualizar, trocar, excluir e
 // recortar em formato quadrado a imagem que aparece nos cards do catálogo.
@@ -277,16 +387,57 @@ function discardCatalogEditSession() {
 }
 
 function commitCatalogEditSession() {
-  _pendingCatalogImages.clear();
+_pendingCatalogImages.clear();
   _catalogEditSnapshot = null;
 }
 
-function stageCatalogProductImage(product, dataUrl, filename) {
+function generateNextSku(prefix, productsList) {
+  let maxNum = 0;
+  for (const p of productsList) {
+    if (p.sku && p.sku.startsWith(prefix)) {
+      const numStr = p.sku.replace(prefix, '');
+      const num = parseInt(numStr, 10);
+      if (!isNaN(num) && num > maxNum) {
+        maxNum = num;
+      }
+    }
+  }
+  const nextNum = maxNum + 1;
+  return `${prefix}${String(nextNum).padStart(5, '0')}`;
+}
+
+function migrateMissingSkus() {
+  if (typeof products === 'undefined' || !Array.isArray(products)) return;
+  const isBags = window.location.pathname.includes('index.html') || !window.location.pathname.includes('looks.html');
+  const prefix = isBags ? '#MFB-' : '#MFL-';
+  
+  let changed = false;
+  // Sort temporally to give oldest items the lowest SKU
+  const sorted = [...products].sort((a,b) => a.id - b.id);
+  
+  sorted.forEach(p => {
+    if (!p.sku) {
+      p.sku = generateNextSku(prefix, products);
+      changed = true;
+    }
+  });
+  
+  if (changed) {
+    if (typeof markDirty === 'function') markDirty();
+    if (typeof renderAdminList === 'function') renderAdminList();
+    showToast('Migração de SKUs concluída automaticamente. Clique em "Revisar e Salvar" para publicar no banco.');
+  }
+}
+
+setTimeout(migrateMissingSkus, 2000);
+
+function stageCatalogProductImage(product, dataUrl, filename, originalName) {
   const current = _pendingCatalogImages.get(product.id) || {};
   const isHttp = typeof dataUrl === 'string' && dataUrl.startsWith('http');
   _pendingCatalogImages.set(product.id, {
     dataUrl,
-    filename: filename || current.filename || `catalogo-${product.id}-${Date.now()}.webp`,
+    filename: filename || current.filename || null,
+    originalName: originalName || current.originalName || 'foto',
     uploadedUrl: isHttp ? dataUrl : null,
   });
   product.img = dataUrl || '';
@@ -319,15 +470,27 @@ function getLocalImageUsages(imageName) {
   return usages;
 }
 
+function slugifyName(name) {
+  return (name || 'sem-nome').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
 async function finalizePendingProductImages() {
   for (const [id, pending] of _pendingCatalogImages.entries()) {
     const product = _pimProduct(id);
     if (!product || !pending.dataUrl) continue;
     if (!pending.uploadedUrl) {
+      // Definir nome do arquivo com SKU se disponível: [SKU]_[nome]_[original].webp
+      let finalFilename = pending.filename;
+      if (!finalFilename) {
+        const skuStr = product.sku ? product.sku.replace('#', '') : `ID-${product.id}`;
+        const nameSlug = slugifyName(product.name);
+        const origSlug = slugifyName(pending.originalName);
+        finalFilename = `${skuStr}_${nameSlug}_${origSlug}.webp`;
+      }
       // Sobe a imagem original + (melhor esforço) versões redimensionadas
       // reais pro srcset do card no catálogo público. Se a geração/upload das
       // variantes falhar por qualquer motivo, cai de volta pra imagem única.
-      const result = await sbUploadImageResponsive(pending.dataUrl, pending.filename);
+      const result = await sbUploadImageResponsive(pending.dataUrl, finalFilename);
       pending.uploadedUrl = result.url;
       pending.srcset = result.srcset;
     }
@@ -485,16 +648,23 @@ function closeProductImageManager(immediate = false) {
   else setTimeout(() => overlay.remove(), 180);
 }
 
-async function uploadProductImage(file) {
+async function uploadProductImage(file, isRemoveBg = false) {
   if (!_pimState) return;
   const product = _pimProduct(_pimState.id);
   if (!product) return;
   _pimSetBusy(true);
   _pimSetStatus('Preparando a nova imagem…');
   try {
-    const webp = await convertToWebp(file, .9);
-    const filename = `catalogo-${product.id}-${Date.now()}.webp`;
-    stageCatalogProductImage(product, webp, filename);
+    let webp;
+    if (isRemoveBg) {
+      webp = await sbRemoveBackground(file);
+      const originalName = file.name ? file.name.replace(/\.[^/.]+$/, "") + "-nobg" : "sem-fundo";
+      stageCatalogProductImage(product, webp, null, originalName);
+    } else {
+      webp = await convertToWebp(file, .9);
+      const originalName = file.name ? file.name.replace(/\.[^/.]+$/, "") : "foto";
+      stageCatalogProductImage(product, webp, null, originalName);
+    }
     _pimRefreshCatalog();
     _pimRenderImage();
     _pimSetStatus('Nova imagem pronta. Ela será enviada somente ao confirmar e salvar o painel.');
@@ -689,4 +859,115 @@ document.addEventListener('pointermove', event => {
 
 document.addEventListener('pointerup', event => {
   if (_pimState && _pimState.pointerId === event.pointerId) _pimState.pointerId = null;
+}
+
+// ─── BANCO DE NOMES (salva nomes gerados pela IA) ───────────────────────────
+async function saveGeneratedNamesToBank(names) {
+  if (!names || !names.length) return;
+  try {
+    const settings = await sbFetchSettings();
+    let bank = [];
+    if (settings['name_bank']) {
+      try { bank = JSON.parse(settings['name_bank']); } catch (e) {}
+    }
+    for (const n of names) {
+      if (!bank.includes(n.name)) bank.push(n.name);
+    }
+    await sbSetSetting('name_bank', JSON.stringify(bank));
+  } catch (error) {
+    console.error('Falha ao salvar no Banco de Nomes', error);
+  }
+}
+
+async function openNameBankModal(ctx) {
+  const wrap = document.createElement('div');
+  wrap.id = 'nameBankModal';
+  wrap.style.cssText = 'position:fixed;inset:0;z-index:9400;background:rgba(var(--modal-backdrop-rgb, 17,24,39),.65);display:flex;align-items:center;justify-content:center;';
+  wrap.innerHTML = `
+    <div style="background:var(--bg);border-radius:12px;padding:28px 32px;max-width:420px;width:92%;max-height:80vh;display:flex;flex-direction:column;font-family:'Jost',sans-serif;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;">
+        <div>
+          <p style="font-size:16px;font-weight:700;color:var(--modal-title, var(--text));margin-bottom:4px;">Banco de Nomes</p>
+          <p style="font-size:13px;color:var(--modal-muted, var(--text-muted));">Nomes gerados pela IA ficam salvos aqui.</p>
+        </div>
+        <button onclick="document.getElementById('nameBankModal').remove()" style="background:none;border:none;cursor:pointer;color:var(--modal-muted, var(--text-muted));font-size:20px;line-height:1;">&times;</button>
+      </div>
+      <div id="nameBankList" style="flex:1;overflow-y:auto;padding-right:8px;display:flex;flex-direction:column;gap:8px;">
+         <p style="font-size:13px;color:var(--modal-muted, var(--text-muted));text-align:center;padding:20px 0;">Carregando...</p>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:16px;">
+        <button onclick="clearNameBank()" style="padding:8px 16px;border:none;background:#b83232;color:#fff;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">Limpar Banco</button>
+      </div>
+    </div>`;
+  document.body.appendChild(wrap);
+  
+  try {
+    const settings = await sbFetchSettings();
+    let bank = [];
+    if (settings['name_bank']) {
+       try { bank = JSON.parse(settings['name_bank']); } catch (e) {}
+    }
+    renderNameBankList(bank, ctx);
+  } catch (error) {
+    document.getElementById('nameBankList').innerHTML = `<p style="font-size:13px;color:#b83232;text-align:center;">Erro ao carregar o Banco de Nomes.</p>`;
+  }
+}
+
+function renderNameBankList(bank, ctx) {
+  const box = document.getElementById('nameBankList');
+  if (!box) return;
+  if (!bank || !bank.length) {
+    box.innerHTML = `<p style="font-size:13px;color:var(--modal-muted, var(--text-muted));text-align:center;padding:20px 0;">O banco está vazio.</p>`;
+    return;
+  }
+  
+  box.innerHTML = bank.map(name => {
+    const s = _pimEscape(name);
+    return `
+      <div style="display:flex;justify-content:space-between;align-items:center;background:#fff;padding:8px 12px;border:1px solid var(--line);border-radius:6px;">
+        <button type="button" onclick="pickNameFromBank('${s}', '${ctx}')" style="flex:1;text-align:left;background:none;border:none;cursor:pointer;font-size:14px;color:var(--text);font-family:'Jost',sans-serif;">${s}</button>
+        <button type="button" onclick="deleteNameFromBank('${s}', '${ctx}')" style="background:none;border:none;cursor:pointer;color:#b83232;font-size:16px;padding:0 4px;" title="Excluir">&times;</button>
+      </div>
+    `;
+  }).join('');
+}
+
+function pickNameFromBank(name, ctx) {
+  const input = ctx === 'new' ? document.getElementById('crudNewName') : document.getElementById(`crudName-${ctx}`);
+  if (input) {
+     input.value = name;
+     if (ctx === 'new' && typeof crudNewNameSource !== 'undefined') crudNewNameSource = 'gemini';
+  }
+  document.getElementById('nameBankModal').remove();
+}
+
+async function deleteNameFromBank(name, ctx) {
+  const box = document.getElementById('nameBankList');
+  box.innerHTML = `<p style="font-size:13px;color:var(--modal-muted, var(--text-muted));text-align:center;padding:20px 0;">Excluindo...</p>`;
+  try {
+    const settings = await sbFetchSettings();
+    let bank = [];
+    if (settings['name_bank']) {
+       try { bank = JSON.parse(settings['name_bank']); } catch (e) {}
+    }
+    bank = bank.filter(n => n !== name);
+    await sbSetSetting('name_bank', JSON.stringify(bank));
+    renderNameBankList(bank, ctx);
+  } catch(e) {
+    console.error(e);
+    box.innerHTML = `<p style="font-size:13px;color:#b83232;text-align:center;">Erro ao excluir do banco.</p>`;
+  }
+}
+
+async function clearNameBank() {
+  if (!confirm('Tem certeza que deseja apagar TODOS os nomes do banco? Essa ação não pode ser desfeita.')) return;
+  const box = document.getElementById('nameBankList');
+  box.innerHTML = `<p style="font-size:13px;color:var(--modal-muted, var(--text-muted));text-align:center;padding:20px 0;">Limpando...</p>`;
+  try {
+    await sbSetSetting('name_bank', JSON.stringify([]));
+    box.innerHTML = `<p style="font-size:13px;color:var(--modal-muted, var(--text-muted));text-align:center;padding:20px 0;">O banco está vazio.</p>`;
+  } catch(e) {
+    console.error(e);
+    box.innerHTML = `<p style="font-size:13px;color:#b83232;text-align:center;">Erro ao limpar o banco.</p>`;
+  }
 });

@@ -3055,9 +3055,12 @@ function renderPanel() {
 
   <div class="apane" id="tab-crud">
     <section class="crud-create" aria-labelledby="crudCreateTitle">
-      <div>
-        <h3 id="crudCreateTitle">Cadastrar nova peça</h3>
-        <p>Envie a foto e preencha nome e preço. A peça entra disponível, favorita e com o selo NOVO.</p>
+      <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+        <div>
+          <h3 id="crudCreateTitle">Cadastrar nova peça</h3>
+          <p>Envie a foto e preencha nome e preço. A peça entra disponível, favorita e com o selo NOVO.</p>
+        </div>
+        <button type="button" class="fb" style="margin-top:0;background:transparent;color:var(--rose-dark);border:1px solid var(--line);font-size:12px;padding:8px 12px;width:auto;" onclick="openDeletedHistoryModal()">Histórico Excluído</button>
       </div>
       <div class="crud-create-grid">
         <div class="crud-image-tools">
@@ -3065,7 +3068,15 @@ function renderPanel() {
           <button type="button" class="crud-remove-bg" id="crudRemoveBg" onclick="removeCrudNewBackground()" disabled>Remover fundo</button>
           <button type="button" class="crud-gen-btn" id="crudGenBtn" onclick="openGenModal('new')">✨ Gerar nome e descrição</button>
         </div>
-        <label><span>Nome</span><input class="fi" id="crudNewName" placeholder="Ex: Colar Luma" style="width:100%;"></label>
+        <label style="display:flex; flex-direction:column; gap:6px;">
+          <span>Nome</span>
+          <div style="display:flex; gap:6px; align-items:stretch;">
+            <button type="button" onclick="openNameBankModal('new')" style="padding:0 8px; border:1px solid var(--line); border-radius:6px; background:#fff; color:var(--text); cursor:pointer; font-size:12px; font-weight:700;" title="Abrir Banco de Nomes">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px; margin-right:4px;"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg> Banco
+            </button>
+            <input class="fi" id="crudNewName" placeholder="Ex: Colar Luma" style="flex:1; min-width:0;">
+          </div>
+        </label>
         <label><span>Preço</span><input class="fi" id="crudNewPrice" inputmode="numeric" placeholder="Ex: R$ 149"></label>
         <label><span>Categoria</span>
           <select class="fi" id="crudNewCat" style="display:none;"></select>
@@ -4405,7 +4416,7 @@ function _genShowErr(msg) {
 }
 function _genClearErr() {
   const el = document.getElementById('genErr');
-  if (el) { el.textContent = ''; el.style.display = 'none'; }
+  if (el) { el.textContent = ''; el.style.display = 'none'; el.style.color = 'var(--modal-error)'; }
 }
 function _genImageSource(ctx) {
   if (ctx === 'new') return typeof crudNewImageSource === 'string' ? crudNewImageSource : crudNewFile;
@@ -4469,6 +4480,10 @@ async function _doGenerateName(ctx, imageDataUrl) {
     });
     const names = nameResult?.names || [];
     if (names.length && chips) {
+      saveGeneratedNamesToBank(names);
+      _genShowErr('Os nomes gerados foram armazenados no Banco de Nomes.');
+      const errEl = document.getElementById('genErr');
+      if (errEl) { errEl.style.color = '#10b981'; } // verde sucesso
       chips.innerHTML = names.map(n => { const s = _pimEscape(n.name); return `<button type="button" class="gal-chip" data-name="${s}" onclick="pickGenName(this.dataset.name, this)">${s}</button>`; }).join('');
       if (namesWrap) namesWrap.style.display = 'block';
       return '';
@@ -4600,10 +4615,25 @@ async function addCrudBag() {
     if (message) message.textContent = 'Escolha a imagem e preencha nome e preço.';
     return;
   }
+  
+  const isNameDuplicate = products.some(p => p.name.toLowerCase() === name.toLowerCase());
+  if (isNameDuplicate) {
+    if (message) { message.textContent = 'Já existe uma peça com este nome. Escolha um nome diferente.'; message.style.color = '#7A1E1E'; }
+    return;
+  }
+  
+  if (desc) {
+    const isDescDuplicate = products.some(p => p.desc && p.desc.toLowerCase() === desc.toLowerCase());
+    if (isDescDuplicate) {
+      if (message) { message.textContent = 'Já existe uma peça com esta descrição. Altere a descrição.'; message.style.color = '#7A1E1E'; }
+      return;
+    }
+  }
+
   try {
     if (message) message.textContent = 'Preparando a imagem…';
     const product = {
-      id: Date.now(), name, cat, price, status:'available', isNew:true,
+      id: Date.now(), sku: generateNextSku('#MFL-', products), name, cat, price, status:'available', isNew:true,
       favorite:true, img:null, promo:null, tags:[], occasion:'dia-a-dia', order:products.length + 1, desc
     };
     const webp = await convertToWebp(crudNewImageSource || crudNewFile, .9);
@@ -4800,7 +4830,8 @@ function renderAdminList() {
       </div>
     </div>`;
 
-  const rows = products.map((p, i) => {
+  const filteredProducts = products.filter(p => p.status !== 'deleted');
+  const rows = filteredProducts.map((p, i) => {
     const bg = i % 2 === 0 ? 'rgba(247,241,232,.55)' : 'rgba(156,122,52,.06)';
     return `
     <div class="admin-catalog-row" style="display:flex;align-items:stretch;background:${bg};border-bottom:1px solid var(--line);">
@@ -4975,13 +5006,17 @@ function removeAllPromos() {
 
 function bulkDeleteAll(chk) {
   chk.checked = false;
-  if (!products.length) { showToast('Catálogo já está vazio.'); return; }
+  let activeProducts = products.filter(p => p.status !== 'deleted');
+  if (!activeProducts.length) { showToast('Catálogo já está vazio.'); return; }
   showConfirmDouble(
     'Excluir TODOS os itens?',
-    `${products.length} item(s) serão removidos permanentemente.`,
+    `${activeProducts.length} item(s) serão removidos permanentemente.`,
     'Tem certeza absoluta? Esta ação é irreversível.',
     () => {
-      products = [];
+      activeProducts.forEach(p => {
+        p.status = 'deleted';
+        sbUpsertLook(p).catch(e => console.error('Falha ao excluir no banco:', e));
+      });
       markDirty(); renderProducts('all'); renderAdminList(); renderOverviewTab();
       showToast('Todos os itens foram excluídos.');
     }
@@ -5201,8 +5236,15 @@ function addProd() {
     msg.textContent = 'Preencha o nome e o preço.';
     return;
   }
+  
+  const isNameDuplicate = products.some(p => p.name.toLowerCase() === name.toLowerCase());
+  if (isNameDuplicate) {
+    msg.style.color = '#7A1E1E';
+    msg.textContent = 'Já existe uma peça com este nome. Escolha um nome diferente.';
+    return;
+  }
   const newProduct = {
-    id: Date.now(), name, cat: document.getElementById('nc').value,
+    id: Date.now(), sku: generateNextSku('#MFL-', products), name, cat: document.getElementById('nc').value,
     price, status: document.getElementById('na').value,
     isNew: document.getElementById('nin').value === 'true',
     img: newProdFinalImg || null,
@@ -5210,7 +5252,7 @@ function addProd() {
   products.unshift(newProduct);
   if (newProdFinalImg) {
     const baseName = (newProdFileName || 'peca').replace(/\.[^.]+$/, '');
-    stageCatalogProductImage(newProduct, newProdFinalImg, `${baseName}-${newProduct.id}.webp`);
+    stageCatalogProductImage(newProduct, newProdFinalImg, null, baseName);
   }
   markDirty();
   renderProducts('all');
@@ -5389,10 +5431,12 @@ function confirmDel(id) {
 }
 
 function delProd(id) {
-  products = products.filter(x => x.id !== id);
+  const p = products.find(x => x.id === id);
+  if (!p) return;
+  p.status = 'deleted';
   markDirty(); renderProducts('all'); renderAdminList(); renderOverviewTab(); renderCrudBags();
   closeCrudEditModal();
-  sbDeleteLook(id).catch(e => console.error('Falha ao excluir no banco:', e));
+  sbUpsertLook(p).catch(e => console.error('Falha ao excluir no banco:', e));
 }
 
 function togNew(id) {
