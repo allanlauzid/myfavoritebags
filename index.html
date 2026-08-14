@@ -2486,18 +2486,30 @@ if (!document.getElementById('skeletonShineKeyframes')) {
 renderCatalogSkeleton();
 
 async function loadProductsFromDB() {
-  if (window.MFB_USE_REMOTE_CATALOG === false) return;
+  const fallbackRender = () => {
+    applyBadgeExpirations(products);
+    renderProducts('all');
+    renderFavCarousel();
+    if (document.getElementById('tab-manage')?.classList.contains('on')) renderAdminList();
+  };
+
+  if (window.MFB_USE_REMOTE_CATALOG === false) {
+    fallbackRender();
+    return;
+  }
+  
   try {
     const dbProducts = await sbFetchBags();
     if (dbProducts && dbProducts.length) {
       products = dbProducts;
-      applyBadgeExpirations(products);
-      renderProducts('all');
-      renderFavCarousel();
-      if (document.getElementById('tab-manage')?.classList.contains('on')) renderAdminList();
+      fallbackRender();
+    } else {
+      console.warn('Nenhuma bolsa encontrada no banco, usando dados locais.');
+      fallbackRender();
     }
   } catch (e) {
     console.warn('Não foi possível carregar bolsas do banco, usando dados locais.', e);
+    fallbackRender();
   }
 }
 loadProductsFromDB();

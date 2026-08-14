@@ -2288,17 +2288,29 @@ if (!document.getElementById('skeletonShineKeyframes')) {
 renderCatalogSkeleton();
 
 async function loadProductsFromDB() {
-  if (window.MFB_USE_REMOTE_CATALOG === false) return;
+  const fallbackRender = () => {
+    renderProducts('all');
+    renderFavCarousel();
+    if (document.getElementById('tab-manage')?.classList.contains('on')) renderAdminList();
+  };
+
+  if (window.MFB_USE_REMOTE_CATALOG === false) {
+    fallbackRender();
+    return;
+  }
+  
   try {
     const dbProducts = await sbFetchLooks();
     if (dbProducts && dbProducts.length) {
       products = dbProducts;
-      renderProducts('all');
-      renderFavCarousel();
-      if (document.getElementById('tab-manage')?.classList.contains('on')) renderAdminList();
+      fallbackRender();
+    } else {
+      console.warn('Nenhum look encontrado no banco, usando dados locais.');
+      fallbackRender();
     }
   } catch (e) {
     console.warn('Não foi possível carregar looks do banco, usando dados locais.', e);
+    fallbackRender();
   }
 }
 loadProductsFromDB();
