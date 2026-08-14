@@ -283,10 +283,11 @@ function commitCatalogEditSession() {
 
 function stageCatalogProductImage(product, dataUrl, filename) {
   const current = _pendingCatalogImages.get(product.id) || {};
+  const isHttp = typeof dataUrl === 'string' && dataUrl.startsWith('http');
   _pendingCatalogImages.set(product.id, {
     dataUrl,
     filename:filename || current.filename || `catalogo-${product.id}-${Date.now()}.webp`,
-    uploadedUrl:null,
+    uploadedUrl: isHttp ? dataUrl : null,
   });
   product.img = dataUrl || '';
   // A imagem mudou (ou foi removida) — o srcset antigo não corresponde mais a
